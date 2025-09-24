@@ -1,4 +1,8 @@
 /**
+ * Module: config.gs — Accès configuration
+ * But: lire les paires clé/valeur de l’onglet Configuration et exposer un helper d’accès.
+ */
+/**
  * Lecture simple de la table Configuration (clé/valeur)
  * Ex. clés: GMAIL_LABEL_INGEST_STOCK, GMAIL_LABEL_SALES_VINTED, COMMISSION_VINTED, APPLY_URSSAF...
  */

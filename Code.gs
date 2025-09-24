@@ -1,3 +1,7 @@
+/**
+ * Module: Code.gs — Menu CRM principal
+ * But: déclarer le menu Sheets complet et ouvrir l’interface modale du CRM.
+ */
 /** Menu CRM (complet) + Lanceur UI (fenêtre popup) */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();

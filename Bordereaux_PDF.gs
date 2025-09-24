@@ -1,4 +1,8 @@
 /**
+ * Module: Bordereaux_PDF.gs — Génération d’étiquettes
+ * But: produire des PDF de bordereaux depuis l’onglet dédié en enrichissant statut et lien dans Sheets.
+ */
+/**
  * Étape 6 — Bordereaux (v1 overlay via Google Slides -> PDF)
  * - Lit l’onglet Bordereaux (colonnes: Date, SKU, Titre (avec SKU), N° suivi, Transporteur, Statut PDF, Lien PDF, Notes)
  * - Produit un PDF A6 (ou A4) avec overlay: Titre+SKU (+ N° suivi), puis renseigne "Statut PDF" et "Lien PDF"

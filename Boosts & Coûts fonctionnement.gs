@@ -1,4 +1,8 @@
 /**
+ * Module: Boosts & Coûts fonctionnement.gs — Suivi des dépenses marketing
+ * But: saisir rapidement boosts/coûts par prompts et publier un résumé mensuel dans les logs.
+ */
+/**
  * Étape 7 — Boosts & Coûts fonctionnement (v1 simple)
  * - Deux prompts rapides pour ajouter des lignes dans les onglets Boosts / Coûts fonctionnement
  * - Un résumé mensuel (sommes) écrit dans Logs

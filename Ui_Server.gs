@@ -1,4 +1,8 @@
 /**
+ * Module: Ui_Server.gs — API Apps Script pour l’UI
+ * But: exposer les endpoints nécessaires à l’interface HtmlService sans dupliquer la logique métier.
+ */
+/**
  * Ponts serveur pour l'UI popup (HtmlService)
  * — Appelle tes fonctions existantes sans rien réécrire.
  */
