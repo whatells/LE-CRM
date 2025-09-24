@@ -1,0 +1,46 @@
+/* Utilitaires DOM */
+function qs(sel, root) { return (root || document).querySelector(sel); }
+function qsa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+
+
+/* Router très simple entre vues */
+function setView(view) {
+qsa('.view').forEach(v => v.classList.add('hidden'));
+const target = qs('.view[data-view="' + view + '"]');
+if (target) target.classList.remove('hidden');
+qsa('.menu-item').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+}
+
+
+/* Boot + bindings */
+function bind() {
+// Routing
+qsa('.menu-item').forEach(function(btn) {
+btn.addEventListener('click', function() { setView(btn.dataset.view); });
+});
+setView('dashboard');
+
+
+// Bouton de fermeture (modal uniquement)
+const btnClose = qs('#btnClose');
+if (btnClose) {
+btnClose.addEventListener('click', function() {
+if (google && google.script && google.script.host && google.script.host.close) {
+google.script.host.close();
+}
+});
+}
+
+
+// Test serveur: ping
+const btnPing = qs('#btnPing');
+const pingOut = qs('#pingOut');
+if (btnPing && pingOut) {
+btnPing.addEventListener('click', function() {
+pingOut.textContent = '...';
+try {
+google.script.run
+.withSuccessHandler(function(res) {
+pingOut.textContent = res && res.ok ? ('OK @ ' + res.ts) : 'Réponse inattendue';
+})
+window.addEventListener('DOMContentLoaded', bind);
