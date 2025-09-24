@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Le CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style><?!= include_('app.css.html'); ?></style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="brand">Le CRM</div>
+<nav class="menu">
+<button class="menu-item" data-view="dashboard">Dashboard</button>
+<button class="menu-item" data-view="ventes">Ventes</button>
+<button class="menu-item" data-view="stock">Inventaire</button>
+<button class="menu-item" data-view="emails">Emails & Logs</button>
+<button class="menu-item" data-view="config">Config</button>
+</nav>
+<div class="sidebar-footer">
+<button id="btnClose" class="ghost">Fermer</button>
+</div>
+</aside>
+
+
+<main class="content">
+<section class="view" data-view="dashboard">
+<h1>Dashboard</h1>
+<div class="hint">KPIs à venir (Étape 9). Pour test, lance <code>runStep1()</code> puis rouvre le CRM.</div>
+</section>
+
+
+<section class="view hidden" data-view="ventes">
+<h1>Ventes</h1>
+<div class="hint">Liste/filtre des ventes (Étapes 5 & 7).</div>
+</section>
+
+
+<section class="view hidden" data-view="stock">
+<h1>Inventaire</h1>
+<div class="hint">Gestion Stock + validations SKU (Étapes 2–4).</div>
+</section>
+
+
+<section class="view hidden" data-view="emails">
+<h1>Emails & Logs</h1>
+<div class="row">
+<button id="btnPing">Tester serveur</button>
+<span id="pingOut" class="muted"></span>
+</div>
+<div class="hint">Parsing des labels Gmail (Étape 5) + Logs.</div>
+</section>
+
+
+<section class="view hidden" data-view="config">
+<h1>Configuration</h1>
+<div class="hint">Commissions, URSSAF, labels Gmail… (Étape 8).</div>
+</section>
+</main>
+</html>
