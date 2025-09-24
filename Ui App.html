@@ -28,12 +28,26 @@
     th,td{padding:8px 10px;border-bottom:1px solid #1a2132;font-size:12px}
     th{background:#0b0d12;color:#9aa6bf;position:sticky;top:0}
     .pager{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .pager button{background:#111424;border:1px solid #1f2744;color:#cfd6e6;padding:4px 8px;border-radius:10px;cursor:pointer}
+    .pager button:hover{background:#1a2140;color:#fff}
+    .pager button:disabled{opacity:0.5;cursor:default;background:#111424;color:#666}
     .hint{margin-top:8px;color:#93a0b5;font-size:12px}
     fieldset{border:1px solid #1d2233;border-radius:12px;padding:12px;margin-bottom:12px}
     legend{padding:0 6px;color:#9aa6bf}
     .form.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
     .grid-comm{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:6px;align-items:center}
-    input[type="text"],input[type="number"]{background:#0b0d12;color:#e7e9ee;border:1px solid #23283c;border-radius:10px;padding:8px 10px;outline:none}
+    input[type="text"],input[type="number"],select{background:#0b0d12;color:#e7e9ee;border:1px solid #23283c;border-radius:10px;padding:8px 10px;outline:none;width:100%}
+    .form-row{display:flex;gap:12px;flex-wrap:wrap}
+    .form-row label{flex:1;display:flex;flex-direction:column;gap:4px;font-size:12px;color:#9aa6bf}
+    .form-row label span{font-weight:500}
+    .form-actions{display:flex;justify-content:flex-end;margin-top:8px}
+    .form-actions button{background:#2b5cff;color:white;border:0;border-radius:12px;padding:9px 16px;cursor:pointer}
+    .form-actions button:disabled{opacity:0.6;cursor:default}
+    .quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+    .quick-actions button{background:#1a2140;border:1px solid #2f3756;color:#cfd6e6;padding:6px 12px;border-radius:10px;cursor:pointer;font-size:12px}
+    .quick-actions button:hover{filter:brightness(1.08)}
+    .quick-actions button:disabled{opacity:0.5;cursor:default;filter:none}
+    .hidden{display:none !important}
     .status{padding:6px 8px;background:#141824;border:1px solid #1d2233;border-radius:10px}
   </style>
 </head>
@@ -45,6 +59,7 @@
         <button data-tab="dash" class="active">Dashboard</button>
         <button data-tab="ventes">Ventes</button>
         <button data-tab="stock">Inventaire</button>
+        <button data-tab="costs">Coûts fonctionnement</button>
         <button data-tab="emails">Emails & Logs</button>
         <button data-tab="config">Config</button>
       </nav>
@@ -79,6 +94,50 @@
         </header>
         <div id="stockTable" class="table"></div>
         <div class="pager" id="stockPager"></div>
+      </section>
+
+      <!-- COSTS -->
+      <section id="tab-costs" class="tab">
+        <header class="bar">
+          <h1>Coûts fonctionnement</h1>
+          <div class="actions"><button id="btnSeedCosts">Ajouter récurrents du jour</button></div>
+        </header>
+        <form id="costForm" class="cost-form">
+          <fieldset>
+            <legend>Ajouter un coût</legend>
+            <div class="form-row">
+              <label><span>Libellé</span><input type="text" id="costLabel" required placeholder="Libellé" /></label>
+              <label><span>Montant (€)</span><input type="number" id="costAmount" step="0.01" required placeholder="0,00" /></label>
+            </div>
+            <div class="form-row">
+              <label><span>Type</span>
+                <select id="costType">
+                  <option value="Ponctuel" selected>Ponctuel</option>
+                  <option value="Récurrent">Récurrent</option>
+                </select>
+              </label>
+              <label id="costRecurrenceField" class="hidden"><span>Récurrence</span>
+                <select id="costRecurrence">
+                  <option value="hebdo">Hebdo</option>
+                  <option value="mensuel" selected>Mensuelle</option>
+                  <option value="trimestriel">Trimestrielle</option>
+                  <option value="annuel">Annuelle</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="btnAddCost">Ajouter</button>
+            </div>
+          </fieldset>
+        </form>
+        <div class="quick-actions">
+          <button type="button" data-label="Vtools" data-type="recurrent" data-recurrence="mensuel">+ Vtools</button>
+          <button type="button" data-label="Photoroom" data-type="recurrent" data-recurrence="mensuel">+ Photoroom</button>
+          <button type="button" data-label="readycook" data-type="recurrent" data-recurrence="mensuel">+ readycook</button>
+          <button type="button" data-label="VintedCRM" data-type="recurrent" data-recurrence="mensuel">+ VintedCRM</button>
+        </div>
+        <div id="costsTable" class="table"></div>
+        <div class="pager" id="costsPager"></div>
       </section>
 
       <!-- EMAILS & LOGS -->
@@ -145,6 +204,7 @@
       if (name==='dash') loadDashboard();
       if (name==='stock') loadStock(1);
       if (name==='ventes') loadVentes(1);
+      if (name==='costs') loadCosts(1);
       if (name==='emails') loadLogs();
       if (name==='config') loadConfig();
     }
@@ -155,6 +215,7 @@
 
     function renderKpis(list){
       const wrap = $('#kpiList');
+      if (!wrap) return;
       if (!list || !list.length){ wrap.innerHTML = '<div class="status">Aucun KPI. Lance “Rebâtir KPI + Graphiques”.</div>'; return; }
       wrap.innerHTML = list.map(([k,v])=>`<div class="item"><div class="label">${k}</div><div class="val">${v}</div></div>`).join('');
     }
@@ -168,16 +229,20 @@
     });
 
     function renderTable(el, rows, headers){
+      if (!el) return;
       if (!rows || !rows.length){ el.innerHTML = '<div class="status">Aucune donnée</div>'; return; }
       const head = headers ? `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>` : '';
       const body = '<tbody>'+rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'':v}</td>`).join('')}</tr>`).join('')+'</tbody>';
       el.innerHTML = `<table>${head}${body}</table>`;
     }
     function renderPager(el, total, page, size, loadFn){
+      if (!el) return;
       const pages = Math.max(1, Math.ceil(total/size));
-      el.innerHTML = `<button ${page<=1?'disabled':''} id="pgPrev">◀</button> <span>${page}/${pages}</span> <button ${page>=pages?'disabled':''} id="pgNext">▶</button>`;
-      $('#pgPrev') && $('#pgPrev').addEventListener('click', ()=>loadFn(page-1));
-      $('#pgNext') && $('#pgNext').addEventListener('click', ()=>loadFn(page+1));
+      el.innerHTML = `<button type="button" data-dir="prev" ${page<=1?'disabled':''}>◀</button> <span>${page}/${pages}</span> <button type="button" data-dir="next" ${page>=pages?'disabled':''}>▶</button>`;
+      const prev = el.querySelector('button[data-dir="prev"]');
+      const next = el.querySelector('button[data-dir="next"]');
+      if (prev) prev.addEventListener('click', ()=>loadFn(page-1));
+      if (next) next.addEventListener('click', ()=>loadFn(page+1));
     }
 
     const STOCK_PAGE_SIZE = 20;
@@ -207,6 +272,145 @@
       const b = $('#btnRecalcMargins'); b.disabled = true;
       google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadVentes(1); }).ui_step8RecalcAll();
     });
+
+    const COSTS_PAGE_SIZE = 20;
+    function formatCostDate(value){
+      if (!value) return '';
+      if (value instanceof Date){
+        return value.toLocaleDateString('fr-FR');
+      }
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('fr-FR');
+    }
+    function formatCostAmount(value){
+      if (value === '' || value === null || value === undefined) return '';
+      const num = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+      if (!isFinite(num)) return value;
+      return num.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    function loadCosts(page){
+      const table = $('#costsTable');
+      const pager = $('#costsPager');
+      if (!table || !pager) return;
+      const p = Math.max(1, page||1);
+      table.innerHTML = '<div class="status">Chargement…</div>';
+      google.script.run.withSuccessHandler(res=>{
+        const total = res && typeof res.total === 'number' ? res.total : 0;
+        const rows = Array.isArray(res && res.rows) ? res.rows.map(row=>{
+          const [d,c,l,a,n] = row;
+          return [
+            formatCostDate(d),
+            c || '',
+            l || '',
+            formatCostAmount(a),
+            n || ''
+          ];
+        }) : [];
+        renderTable(table, rows, ['Date','Catégorie','Libellé','Montant','Notes']);
+        renderPager(pager, total, p, COSTS_PAGE_SIZE, loadCosts);
+      }).withFailureHandler(err=>{
+        table.innerHTML = '<div class="status">Erreur: ' + (err && err.message ? err.message : err) + '</div>';
+        renderPager(pager, 0, 1, COSTS_PAGE_SIZE, loadCosts);
+      }).ui_getCostsPage(p, COSTS_PAGE_SIZE);
+    }
+
+    const costForm = $('#costForm');
+    if (costForm){
+      const labelInput = $('#costLabel');
+      const amountInput = $('#costAmount');
+      const typeSelect = $('#costType');
+      const recurrenceField = $('#costRecurrenceField');
+      const recurrenceSelect = $('#costRecurrence');
+      const addBtn = $('#btnAddCost');
+      function toggleRecurrence(){
+        const isRecurring = (typeSelect.value || '').toLowerCase().startsWith('r');
+        recurrenceField.classList.toggle('hidden', !isRecurring);
+      }
+      typeSelect.addEventListener('change', toggleRecurrence);
+      toggleRecurrence();
+      costForm.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const label = labelInput.value.trim();
+        if (!label){
+          alert('Libellé requis');
+          labelInput.focus();
+          return;
+        }
+        const amountStr = amountInput.value.trim();
+        if (!amountStr){
+          alert('Montant requis');
+          amountInput.focus();
+          return;
+        }
+        const amount = Number(amountStr.replace(',', '.'));
+        if (!isFinite(amount)){
+          alert('Montant invalide');
+          amountInput.focus();
+          return;
+        }
+        const payload = {
+          label: label,
+          amount: amount,
+          type: typeSelect.value,
+          recurrence: (typeSelect.value || '').toLowerCase().startsWith('r') ? recurrenceSelect.value : ''
+        };
+        addBtn.disabled = true;
+        const original = addBtn.textContent;
+        addBtn.textContent = 'Ajout…';
+        google.script.run.withSuccessHandler(()=>{
+          addBtn.disabled = false;
+          addBtn.textContent = original;
+          costForm.reset();
+          typeSelect.value = 'Ponctuel';
+          recurrenceSelect.value = 'mensuel';
+          toggleRecurrence();
+          loadCosts(1);
+        }).withFailureHandler(err=>{
+          addBtn.disabled = false;
+          addBtn.textContent = original;
+          alert('Erreur: ' + (err && err.message ? err.message : err));
+        }).ui_addCost(payload);
+      });
+    }
+
+    $$('.quick-actions button[data-label]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if (btn.disabled) return;
+        const payload = {
+          label: btn.dataset.label,
+          amount: 0,
+          type: btn.dataset.type || 'recurrent',
+          recurrence: btn.dataset.recurrence || 'mensuel'
+        };
+        btn.disabled = true;
+        google.script.run.withSuccessHandler(()=>{
+          btn.disabled = false;
+          loadCosts(1);
+        }).withFailureHandler(err=>{
+          btn.disabled = false;
+          alert('Erreur: ' + (err && err.message ? err.message : err));
+        }).ui_addCost(payload);
+      });
+    });
+
+    const seedBtn = $('#btnSeedCosts');
+    if (seedBtn){
+      seedBtn.addEventListener('click', ()=>{
+        if (seedBtn.disabled) return;
+        const original = seedBtn.textContent;
+        seedBtn.disabled = true;
+        seedBtn.textContent = 'Ajout…';
+        google.script.run.withSuccessHandler(()=>{
+          seedBtn.disabled = false;
+          seedBtn.textContent = original;
+          loadCosts(1);
+        }).withFailureHandler(err=>{
+          seedBtn.disabled = false;
+          seedBtn.textContent = original;
+          alert('Erreur: ' + (err && err.message ? err.message : err));
+        }).ui_seedDefaultCosts();
+      });
+    }
 
     function loadLogs(){
       $('#logsTable').innerHTML = '<div class="status">Chargement…</div>';
