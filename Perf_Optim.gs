@@ -1,3 +1,7 @@
+/**
+ * Module: Perf_Optim.gs — Boîte à outils performance
+ * But: fournir caches, persistance, backoff, logs et triggers partagés par l’ingestion optimisée.
+ */
 /** Étape 10 — Helpers de performance (cache, backoff, états). */
 
 // --- Cache KV (30 min) ---

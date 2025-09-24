@@ -1,4 +1,8 @@
 /**
+ * Module: Gmail_Ingest_Parsers.gs — Extraction des emails
+ * But: parser les messages Gmail, tracer les traitements et garantir l’idempotence via logs et caches.
+ */
+/**
  * Parseurs d’emails par label.
  * Idempotence: on marque Logs + labels Traite/Erreur pour éviter les doublons.
  * NOTE: pas de variables globales de type SHEET_* ici pour éviter les collisions.

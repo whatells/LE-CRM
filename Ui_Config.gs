@@ -1,5 +1,6 @@
 // ==============================
-// FICHIER 2/4 — Ui_Config.gs (Apps Script, serveur)
+// Module: Ui_Config.gs — Back-end configuration
+// But: fournir les clés connues, ouvrir la fenêtre HtmlService et persister les paires clé/valeur.
 // ==============================
 const UI_KNOWN_CONFIG_KEYS = [
   // Labels Gmail

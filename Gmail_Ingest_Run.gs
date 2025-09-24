@@ -1,4 +1,8 @@
 /**
+ * Module: Gmail_Ingest_Run.gs — Orchestration ingestion emails
+ * But: scanner les labels Gmail et alimenter Stock, Ventes, Achats et favoris via les parseurs existants.
+ */
+/**
  * Scanners Gmail + upserts dans les feuilles.
  * Labels pris depuis Configuration.
  */

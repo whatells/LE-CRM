@@ -1,5 +1,6 @@
 // ==============================
-// FICHIER 3 / 3 : Step3_Liaison_Achats_Stock.gs (COMPLET)
+// Module: Step3_Liaison_Achats_Stock.gs — Références Achats ↔ Stock
+// But: générer les IDs Achats, alimenter la liste déroulante et propager les prix d’achat vers le stock.
 // ==============================
 
 /**

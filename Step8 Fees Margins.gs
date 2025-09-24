@@ -1,4 +1,8 @@
 /**
+ * Module: Step8 Fees Margins.gs — Calculs financiers
+ * But: appliquer les règles de commissions, marges et actions de recalcul pour l’onglet Ventes et l’ingestion.
+ */
+/**
  * Étape 8 — Calculs commissions & marges avancés
  * - Calcule la commission par plateforme: max(min, pct*prix + flat)
  * - Marge brute = PV − Prix achat − Commission − Frais port

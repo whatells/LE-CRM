@@ -1,4 +1,8 @@
 /**
+ * Module: Gmail_Ingest_Run_Optimized.gs — Ingestion rapide
+ * But: accélérer les scans Gmail avec pagination, caches et triggers tout en conservant l’idempotence.
+ */
+/**
  * Étape 10 — Ingestion optimisée (batch + cache + idempotence rapide)
  * - Ne touche pas à tes anciens parseurs: on réutilise parseStockJsonMessage_, parseSaleMessage_, etc.
  * - Idempotence: on garde un set d'IDs déjà traités dans UserProperties (PROC_IDS) + Logs (fallback).

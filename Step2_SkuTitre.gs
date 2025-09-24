@@ -1,5 +1,6 @@
 // ==============================
-// FICHIER 2 / 3 : Step2_SkuTitre.gs (COMPLET — VERSION ÉTAPE 3)
+// Module: Step2_SkuTitre.gs — Hygiène SKU & titres
+// But: surveiller les éditions pour normaliser SKU/titres et déclencher la propagation Achats ↔ Stock.
 // ==============================
 
 /**

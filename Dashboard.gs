@@ -1,3 +1,7 @@
+/**
+ * Module: Dashboard.gs — Synthèse des performances
+ * But: assembler les données Stock/Ventes/Boosts/Coûts pour écrire KPIs et graphiques dans l’onglet Dashboard.
+ */
 /** Étape 9 — Dashboard : KPI + Graphiques (idempotent) */
 
 function buildDashboard() {

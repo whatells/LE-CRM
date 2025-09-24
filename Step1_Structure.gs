@@ -1,3 +1,7 @@
+/**
+ * Module: Step1_Structure.gs — Construction du tableur
+ * But: créer/ordonner les onglets, poser en-têtes, formats, validations et exemples pour la base CRM.
+ */
 /** Étape 1 : Structure des onglets + formats + validations */
 function formulaSep_() {
   var loc = SpreadsheetApp.getActive().getSpreadsheetLocale() || "";
