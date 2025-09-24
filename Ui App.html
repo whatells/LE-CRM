@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Le CRM — fenêtre</title>
+  <style>
+    *{box-sizing:border-box}
+    body{background:#0f1115;color:#e7e9ee;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    #app{display:grid;grid-template-columns:220px 1fr;min-height:680px}
+    .sidebar{background:#0b0d12;border-right:1px solid #1d2233;padding:16px;display:flex;flex-direction:column;gap:12px}
+    .logo{font-weight:800;font-size:18px;letter-spacing:.3px}
+    nav{display:flex;flex-direction:column;gap:8px}
+    nav button{background:#111424;border:1px solid #1f2744;color:#cfd6e6;padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer}
+    nav button.active,nav button:hover{background:#1a2140;color:#fff}
+    .content{padding:16px 18px}
+    .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .bar h1{font-size:18px;margin:0}
+    .actions button{background:#2b5cff;color:white;border:0;border-radius:12px;padding:9px 12px;cursor:pointer}
+    .actions button:hover{filter:brightness(1.05)}
+    .tab{display:none}.tab.active{display:block}
+    .kpis{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px}
+    .kpis .item{background:#0b0d12;border:1px solid #1d2233;border-radius:14px;padding:10px 12px}
+    .kpis .label{font-size:12px;color:#9aa6bf}.kpis .val{font-weight:700;font-size:18px}
+    .table{margin-top:8px;border:1px solid #1d2233;border-radius:14px;overflow:auto}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;border-bottom:1px solid #1a2132;font-size:12px}
+    th{background:#0b0d12;color:#9aa6bf;position:sticky;top:0}
+    .pager{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .hint{margin-top:8px;color:#93a0b5;font-size:12px}
+    fieldset{border:1px solid #1d2233;border-radius:12px;padding:12px;margin-bottom:12px}
+    legend{padding:0 6px;color:#9aa6bf}
+    .form.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .grid-comm{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:6px;align-items:center}
+    input[type="text"],input[type="number"]{background:#0b0d12;color:#e7e9ee;border:1px solid #23283c;border-radius:10px;padding:8px 10px;outline:none}
+    .status{padding:6px 8px;background:#141824;border:1px solid #1d2233;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="logo">Le CRM</div>
+      <nav>
+        <button data-tab="dash" class="active">Dashboard</button>
+        <button data-tab="ventes">Ventes</button>
+        <button data-tab="stock">Inventaire</button>
+        <button data-tab="emails">Emails & Logs</button>
+        <button data-tab="config">Config</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="tab-dash" class="tab active">
+        <header class="bar">
+          <h1>Dashboard</h1>
+          <div class="actions"><button id="btnRebuildDash">Rebâtir KPI + Graphiques</button></div>
+        </header>
+        <div id="kpiList" class="kpis"></div>
+        <div class="hint">Les graphiques complets s’affichent dans l’onglet “Dashboard” du tableur.</div>
+      </section>
+
+      <!-- VENTES -->
+      <section id="tab-ventes" class="tab">
+        <header class="bar">
+          <h1>Ventes</h1>
+          <div class="actions"><button id="btnRecalcMargins">Recalculer marges (tout)</button></div>
+        </header>
+        <div id="ventesTable" class="table"></div>
+        <div class="pager" id="ventesPager"></div>
+      </section>
+
+      <!-- STOCK -->
+      <section id="tab-stock" class="tab">
+        <header class="bar">
+          <h1>Inventaire</h1>
+          <div class="actions"><button id="btnStep3Refs">MAJ Réf Achats + liste</button></div>
+        </header>
+        <div id="stockTable" class="table"></div>
+        <div class="pager" id="stockPager"></div>
+      </section>
+
+      <!-- EMAILS & LOGS -->
+      <section id="tab-emails" class="tab">
+        <header class="bar">
+          <h1>Emails & Logs</h1>
+          <div class="actions"><button id="btnIngestFast">Ingestion optimisée</button></div>
+        </header>
+        <h3>Derniers logs</h3>
+        <div id="logsTable" class="table"></div>
+      </section>
+
+      <!-- CONFIG -->
+      <section id="tab-config" class="tab">
+        <header class="bar">
+          <h1>Configuration</h1>
+          <div class="actions"><button id="btnSaveCfg">Enregistrer</button></div>
+        </header>
+        <form id="cfgForm" class="form grid">
+          <fieldset>
+            <legend>Labels Gmail</legend>
+            <label>Ingestion/Stock <input name="GMAIL_LABEL_INGEST_STOCK" placeholder="Ingestion/Stock"></label>
+            <label>Sales/Vinted <input name="GMAIL_LABEL_SALES_VINTED" placeholder="Sales/Vinted"></label>
+            <label>Sales/Vestiaire <input name="GMAIL_LABEL_SALES_VESTIAIRE" placeholder="Sales/Vestiaire"></label>
+            <label>Sales/eBay <input name="GMAIL_LABEL_SALES_EBAY" placeholder="Sales/eBay"></label>
+            <label>Sales/Leboncoin <input name="GMAIL_LABEL_SALES_LEBONCOIN" placeholder="Sales/Leboncoin"></label>
+            <label>Sales/Whatnot <input name="GMAIL_LABEL_SALES_WHATNOT" placeholder="Sales/Whatnot"></label>
+            <label>Favorites/Vinted <input name="GMAIL_LABEL_FAVORITES_VINTED" placeholder="Favorites/Vinted"></label>
+            <label>Offers/Vinted <input name="GMAIL_LABEL_OFFERS_VINTED" placeholder="Offers/Vinted"></label>
+            <label>Purchases/Vinted <input name="GMAIL_LABEL_PURCHASES_VINTED" placeholder="Purchases/Vinted"></label>
+          </fieldset>
+          <fieldset>
+            <legend>Commissions</legend>
+            <div class="grid-comm">
+              <span>Plateforme</span><span>Pct</span><span>Min €</span><span>Flat €</span>
+              <label>Vinted</label>     <input name="COMM_VINTED_PCT" type="number" step="0.01"/><input name="COMM_VINTED_MIN" type="number" step="0.01"/><input name="COMM_VINTED_FLAT" type="number" step="0.01"/>
+              <label>Vestiaire</label>  <input name="COMM_VESTIAIRE_PCT" type="number" step="0.01"/><input name="COMM_VESTIAIRE_MIN" type="number" step="0.01"/><input name="COMM_VESTIAIRE_FLAT" type="number" step="0.01"/>
+              <label>eBay</label>       <input name="COMM_EBAY_PCT" type="number" step="0.01"/><input name="COMM_EBAY_MIN" type="number" step="0.01"/><input name="COMM_EBAY_FLAT" type="number" step="0.01"/>
+              <label>Leboncoin</label>  <input name="COMM_LEBONCOIN_PCT" type="number" step="0.01"/><input name="COMM_LEBONCOIN_MIN" type="number" step="0.01"/><input name="COMM_LEBONCOIN_FLAT" type="number" step="0.01"/>
+              <label>Whatnot</label>    <input name="COMM_WHATNOT_PCT" type="number" step="0.01"/><input name="COMM_WHATNOT_MIN" type="number" step="0.01"/><input name="COMM_WHATNOT_FLAT" type="number" step="0.01"/>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Options globales</legend>
+            <label><input name="APPLY_URSSAF" type="checkbox"/> Activer URSSAF</label>
+            <label>Taux URSSAF <input name="URSSAF_RATE" type="number" step="0.01"/></label>
+            <label><input name="APPLY_FIXED_COSTS" type="checkbox"/> Inclure coûts fixes</label>
+            <label>Coût fixe / vente (€) <input name="FIXED_COST_PER_SALE" type="number" step="0.01"/></label>
+            <label><input name="ROUND_MARGINS" type="checkbox" checked/> Arrondir marges</label>
+          </fieldset>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  (function(){
+    const $ = (s,root=document)=>root.querySelector(s);
+    const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
+
+    function setTab(name){
+      $$('.sidebar nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+      $$('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
+      if (name==='dash') loadDashboard();
+      if (name==='stock') loadStock(1);
+      if (name==='ventes') loadVentes(1);
+      if (name==='emails') loadLogs();
+      if (name==='config') loadConfig();
+    }
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-tab]');
+      if (btn){ setTab(btn.dataset.tab); }
+    });
+
+    function renderKpis(list){
+      const wrap = $('#kpiList');
+      if (!list || !list.length){ wrap.innerHTML = '<div class="status">Aucun KPI. Lance “Rebâtir KPI + Graphiques”.</div>'; return; }
+      wrap.innerHTML = list.map(([k,v])=>`<div class="item"><div class="label">${k}</div><div class="val">${v}</div></div>`).join('');
+    }
+    function loadDashboard(){
+      $('#kpiList').innerHTML = '<div class="status">Chargement…</div>';
+      google.script.run.withSuccessHandler(res=>renderKpis(res.kpis)).ui_getDashboard();
+    }
+    $('#btnRebuildDash').addEventListener('click', ()=>{
+      $('#kpiList').innerHTML = '<div class="status">Recalcul…</div>';
+      google.script.run.withSuccessHandler(()=>loadDashboard()).ui_buildDashboard();
+    });
+
+    function renderTable(el, rows, headers){
+      if (!rows || !rows.length){ el.innerHTML = '<div class="status">Aucune donnée</div>'; return; }
+      const head = headers ? `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>` : '';
+      const body = '<tbody>'+rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'':v}</td>`).join('')}</tr>`).join('')+'</tbody>';
+      el.innerHTML = `<table>${head}${body}</table>`;
+    }
+    function renderPager(el, total, page, size, loadFn){
+      const pages = Math.max(1, Math.ceil(total/size));
+      el.innerHTML = `<button ${page<=1?'disabled':''} id="pgPrev">◀</button> <span>${page}/${pages}</span> <button ${page>=pages?'disabled':''} id="pgNext">▶</button>`;
+      $('#pgPrev') && $('#pgPrev').addEventListener('click', ()=>loadFn(page-1));
+      $('#pgNext') && $('#pgNext').addEventListener('click', ()=>loadFn(page+1));
+    }
+
+    const STOCK_PAGE_SIZE = 20;
+    function loadStock(page){
+      const p = Math.max(1,page||1);
+      $('#stockTable').innerHTML = '<div class="status">Chargement…</div>';
+      google.script.run.withSuccessHandler(res=>{
+        renderTable($('#stockTable'), res.rows, ['Date entrée','SKU','Titre','Photos','Catégorie','Marque','Taille','État','Prix achat (link)','Statut','Plateforme','Réf Achat','Favoris','Offres','Notes']);
+        renderPager($('#stockPager'), res.total, p, STOCK_PAGE_SIZE, loadStock);
+      }).ui_getStockPage(p, STOCK_PAGE_SIZE);
+    }
+    $('#btnStep3Refs').addEventListener('click', ()=>{
+      const b = $('#btnStep3Refs'); b.disabled = true;
+      google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadStock(1); }).ui_step3RefreshRefs();
+    });
+
+    const VENTES_PAGE_SIZE = 20;
+    function loadVentes(page){
+      const p = Math.max(1,page||1);
+      $('#ventesTable').innerHTML = '<div class="status">Chargement…</div>';
+      google.script.run.withSuccessHandler(res=>{
+        renderTable($('#ventesTable'), res.rows, ['Date','Plateforme','Titre','Prix','Frais/Comm','Frais port','Acheteur','SKU','Marge brute','Marge nette']);
+        renderPager($('#ventesPager'), res.total, p, VENTES_PAGE_SIZE, loadVentes);
+      }).ui_getVentesPage(p, VENTES_PAGE_SIZE);
+    }
+    $('#btnRecalcMargins').addEventListener('click', ()=>{
+      const b = $('#btnRecalcMargins'); b.disabled = true;
+      google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadVentes(1); }).ui_step8RecalcAll();
+    });
+
+    function loadLogs(){
+      $('#logsTable').innerHTML = '<div class="status">Chargement…</div>';
+      google.script.run.withSuccessHandler(rows=>{
+        renderTable($('#logsTable'), rows, ['Horodatage','Niveau','Source','Message','Détails']);
+      }).ui_getLogsTail(50);
+    }
+    $('#btnIngestFast').addEventListener('click', ()=>{
+      const b = $('#btnIngestFast'); b.disabled = true;
+      google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadLogs(); }).ui_ingestFast();
+    });
+
+    function loadConfig(){
+      const form = $('#cfgForm');
+      Array.from(form.querySelectorAll('input')).forEach(i=>{ if(i.type!=='checkbox') i.value=''; else i.checked=false; });
+      google.script.run.withSuccessHandler(rows=>{
+        rows.forEach(({key,value})=>{
+          const el = form.querySelector(`[name="${key}"]`);
+          if (!el) return;
+          if (el.type==='checkbox') el.checked = /^(true|1|oui|yes)$/i.test(String(value||''));
+          else el.value = (value!=null? value : '');
+        });
+      }).ui_getConfig();
+    }
+    $('#btnSaveCfg').addEventListener('click', ()=>{
+      const rows = Array.from(document.querySelectorAll('#cfgForm input')).map(el=>({
+        key: el.name,
+        value: (el.type==='checkbox'? (el.checked?'TRUE':'FALSE') : el.value)
+      }));
+      const b = $('#btnSaveCfg'); b.disabled = true; b.textContent='Enregistrement…';
+      google.script.run.withSuccessHandler(()=>{ b.disabled=false; b.textContent='Enregistrer'; }).ui_saveConfig(rows);
+    });
+
+    setTab('dash');
+  })();
+  </script>
+</body>
+</html>
