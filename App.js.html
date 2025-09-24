@@ -1,0 +1,61 @@
+// ==============================
+// FICHIER 5/4 — app.js.html (JS client pour HtmlService)
+// ==============================
+<script>
+(function(){
+  const $ = (s,root=document)=>root.querySelector(s);
+  const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
+
+  function setLoading(msg){
+    $('#status').textContent = msg;
+  }
+
+  function showForm(rows){
+    const form = $('#cfgForm');
+    form.classList.remove('hidden');
+    setLoading('');
+
+    // Remplir valeurs
+    rows.forEach(({key,value}) => {
+      const el = form.querySelector(`[name="${key}"]`);
+      if (!el) return;
+      if (el.type === 'checkbox') {
+        const v = String(value||'').toLowerCase();
+        el.checked = /^(true|1|oui|yes)$/i.test(v);
+      } else {
+        el.value = (value!=null? value : '');
+      }
+    });
+  }
+
+  function toRows(){
+    const form = $('#cfgForm');
+    const inputs = $$('input', form);
+    return inputs.map(el => {
+      let val;
+      if (el.type === 'checkbox') {
+        val = el.checked ? 'TRUE' : 'FALSE';
+      } else {
+        val = el.value;
+      }
+      return { key: el.name, value: val };
+    });
+  }
+
+  function onSave(){
+    $('#saveStatus').textContent = 'Enregistrement…';
+    google.script.run.withSuccessHandler(res => {
+      $('#saveStatus').textContent = 'Sauvegardé ('+res.count+' clés)';
+    }).withFailureHandler(err => {
+      $('#saveStatus').textContent = 'Erreur: '+err;
+    }).saveConfigValues(toRows());
+  }
+
+  // Init
+  setLoading('Chargement de la configuration…');
+  google.script.run.withSuccessHandler(showForm).getKnownConfig();
+  document.addEventListener('click', e => {
+    if (e.target && e.target.id === 'saveBtn') onSave();
+  });
+})();
+</script>
