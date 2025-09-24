@@ -1,0 +1,115 @@
+<script>
+(function(){
+  const $ = (s,root=document)=>root.querySelector(s);
+  const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
+
+  // --- Onglets ---
+  function setTab(name){
+    $$('.sidebar nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+    $$('.tab').forEach(t=>t.classList.toggle('active', t.id==='tab-'+name));
+    if (name==='dash') loadDashboard();
+    if (name==='stock') loadStock(1);
+    if (name==='ventes') loadVentes(1);
+    if (name==='emails') loadLogs();
+    if (name==='config') loadConfig();
+  }
+
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if (btn){ setTab(btn.dataset.tab); }
+  });
+
+  // --- Dashboard ---
+  function renderKpis(list){
+    const wrap = $('#kpiList');
+    if (!list || !list.length){ wrap.innerHTML = '<div class="status">Aucun KPI. Lance “Rebâtir KPI + Graphiques”.</div>'; return; }
+    wrap.innerHTML = list.map(([k,v])=>`<div class="item"><div class="label">${k}</div><div class="val">${v}</div></div>`).join('');
+  }
+  function loadDashboard(){
+    $('#kpiList').innerHTML = '<div class="status">Chargement…</div>';
+    google.script.run.withSuccessHandler(res=>renderKpis(res.kpis)).ui_getDashboard();
+  }
+  $('#btnRebuildDash').addEventListener('click', ()=>{
+    $('#kpiList').innerHTML = '<div class="status">Recalcul…</div>';
+    google.script.run.withSuccessHandler(()=>loadDashboard()).ui_buildDashboard();
+  });
+
+  // --- Tables util ---
+  function renderTable(el, rows, headers){
+    if (!rows || !rows.length){ el.innerHTML = '<div class="status">Aucune donnée</div>'; return; }
+    const head = headers ? `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>` : '';
+    const body = '<tbody>'+rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'':v}</td>`).join('')}</tr>`).join('')+'</tbody>';
+    el.innerHTML = `<table>${head}${body}</table>`;
+  }
+  function renderPager(el, total, page, size, loadFn){
+    const pages = Math.max(1, Math.ceil(total/size));
+    el.innerHTML = `<button ${page<=1?'disabled':''} id="pgPrev">◀</button> <span>${page}/${pages}</span> <button ${page>=pages?'disabled':''} id="pgNext">▶</button>`;
+    $('#pgPrev') && $('#pgPrev').addEventListener('click', ()=>loadFn(page-1));
+    $('#pgNext') && $('#pgNext').addEventListener('click', ()=>loadFn(page+1));
+  }
+
+  // --- Stock ---
+  const STOCK_PAGE_SIZE = 20;
+  function loadStock(page){
+    const p = Math.max(1,page||1);
+    $('#stockTable').innerHTML = '<div class="status">Chargement…</div>';
+    google.script.run.withSuccessHandler(res=>{
+      renderTable($('#stockTable'), res.rows, ['Date entrée','SKU','Titre','Photos','Catégorie','Marque','Taille','État','Prix achat (link)','Statut','Plateforme','Réf Achat','Favoris','Offres','Notes']);
+      renderPager($('#stockPager'), res.total, p, STOCK_PAGE_SIZE, loadStock);
+    }).ui_getStockPage(p, STOCK_PAGE_SIZE);
+  }
+  $('#btnStep3Refs').addEventListener('click', ()=>{
+    $('#btnStep3Refs').disabled = true;
+    google.script.run.withSuccessHandler(()=>{ $('#btnStep3Refs').disabled=false; loadStock(1); }).ui_step3RefreshRefs();
+  });
+
+  // --- Ventes ---
+  const VENTES_PAGE_SIZE = 20;
+  function loadVentes(page){
+    const p = Math.max(1,page||1);
+    $('#ventesTable').innerHTML = '<div class="status">Chargement…</div>';
+    google.script.run.withSuccessHandler(res=>{
+      renderTable($('#ventesTable'), res.rows, ['Date','Plateforme','Titre','Prix','Frais/Comm','Frais port','Acheteur','SKU','Marge brute','Marge nette']);
+      renderPager($('#ventesPager'), res.total, p, VENTES_PAGE_SIZE, loadVentes);
+    }).ui_getVentesPage(p, VENTES_PAGE_SIZE);
+  }
+  $('#btnRecalcMargins').addEventListener('click', ()=>{
+    const b = $('#btnRecalcMargins'); b.disabled = true;
+    google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadVentes(1); }).ui_step8RecalcAll();
+  });
+
+  // --- Emails & Logs ---
+  function loadLogs(){
+    $('#logsTable').innerHTML = '<div class="status">Chargement…</div>';
+    google.script.run.withSuccessHandler(rows=>{
+      renderTable($('#logsTable'), rows, ['Horodatage','Niveau','Source','Message','Détails']);
+    }).ui_getLogsTail(50);
+  }
+  $('#btnIngestFast').addEventListener('click', ()=>{
+    const b = $('#btnIngestFast'); b.disabled = true;
+    google.script.run.withSuccessHandler(()=>{ b.disabled=false; loadLogs(); }).ui_ingestFast();
+  });
+
+  // --- Config ---
+  function loadConfig(){
+    const form = $('#cfgForm');
+    $$('#cfgForm input').forEach(i=>i.value='');
+    google.script.run.withSuccessHandler(rows=>{
+      rows.forEach(({key,value})=>{
+        const el = form.querySelector(`[name="${key}"]`);
+        if (!el) return;
+        if (el.type==='checkbox') el.checked = /^(true|1|oui|yes)$/i.test(String(value||''));
+        else el.value = (value!=null? value : '');
+      });
+    }).ui_getConfig();
+  }
+  $('#btnSaveCfg').addEventListener('click', ()=>{
+    const rows = $$('#cfgForm input').map(el=>({ key: el.name, value: (el.type==='checkbox'? (el.checked?'TRUE':'FALSE') : el.value) }));
+    const b = $('#btnSaveCfg'); b.disabled = true; b.textContent = 'Enregistrement…';
+    google.script.run.withSuccessHandler(res=>{ b.disabled=false; b.textContent='Enregistrer'; }).ui_saveConfig(rows);
+  });
+
+  // Init
+  setTab('dash');
+})();
+</script>
