@@ -38,11 +38,24 @@ google.script.host.close();
 const btnPing = qs('#btnPing');
 const pingOut = qs('#pingOut');
 if (btnPing && pingOut) {
-btnPing.addEventListener('click', function() {
-pingOut.textContent = '...';
-try {
-google.script.run
-.withSuccessHandler(function(res) {
-pingOut.textContent = res && res.ok ? ('OK @ ' + res.ts) : 'Réponse inattendue';
-})
+  btnPing.addEventListener('click', function() {
+    pingOut.textContent = '...';
+    try {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          pingOut.textContent = res && res.ok ? ('OK @ ' + res.ts) : 'Réponse inattendue';
+        })
+        .withFailureHandler(function(err) {
+          pingOut.textContent = 'Erreur: ' + err;
+        })
+        .ui_ping();
+    } catch (err) {
+      pingOut.textContent = 'Erreur: ' + err;
+    }
+  });
+}
+
+}
+
+
 window.addEventListener('DOMContentLoaded', bind);
