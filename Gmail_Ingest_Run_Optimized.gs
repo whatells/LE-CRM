@@ -21,26 +21,64 @@ function ingestAllLabelsFast(){
 }
 
 // --- Proc IDs (idempotence mémoire + persistance légère) ---
+const PROC_IDS_FAST_KEY = "PROC_IDS";
+let PROC_IDS_FAST_CACHE = null;
+
 function getProcIds_(){
-  return stateGet_("PROC_IDS", {});
+  if (!PROC_IDS_FAST_CACHE) {
+    PROC_IDS_FAST_CACHE = stateGet_(PROC_IDS_FAST_KEY, {}) || {};
+  }
+  return PROC_IDS_FAST_CACHE;
 }
 function addProcId_(id){
+  if (!id) return;
   const map = getProcIds_();
-  map[id] = 1;
-  statePut_("PROC_IDS", map);
+  map[id] = Date.now();
+  pruneProcIdsFast_(map);
+  statePut_(PROC_IDS_FAST_KEY, map);
 }
 function seenProcId_(id){
   const map = getProcIds_();
   return !!map[id];
 }
 
+function pruneProcIdsFast_(map){
+  const keys = Object.keys(map);
+  const LIMIT = 500;
+  if (keys.length <= LIMIT) return;
+  keys.sort((a,b) => Number(map[a] || 0) - Number(map[b] || 0));
+  while (keys.length > LIMIT) {
+    const key = keys.shift();
+    delete map[key];
+  }
+}
+
 // --- Pagination threads (curseur en state) ---
 function nextThreads_(query, batchSize){
   const cursorKey = "THREAD_CURSOR::"+query;
-  const page = stateGet_(cursorKey, 0);
-  const threads = withBackoff_(()=>GmailApp.search(query, page*batchSize, batchSize));
-  if (threads.length === 0) return [];
-  statePut_(cursorKey, page + 1);
+  const now = Date.now();
+  let cursor = stateGet_(cursorKey, null);
+  if (typeof cursor === 'number') {
+    cursor = { page: cursor, ts: 0, done: false };
+  }
+  if (!cursor) {
+    cursor = { page: 0, ts: now, done: false };
+  } else if (cursor.done) {
+    stateDel_(cursorKey);
+    return [];
+  } else if (cursor.ts && now - cursor.ts > 3600000) {
+    cursor = { page: 0, ts: now, done: false };
+  }
+
+  const page = cursor.page || 0;
+  const threads = withBackoff_(() => GmailApp.search(query, page * batchSize, batchSize));
+  if (threads.length === 0) {
+    stateDel_(cursorKey);
+    return [];
+  }
+
+  cursor = { page: page + 1, ts: now, done: threads.length < batchSize };
+  statePut_(cursorKey, cursor);
   return threads;
 }
 
@@ -66,100 +104,3 @@ function ingestStockJsonFast_(label){
         } catch (e){
           t.addLabel(err);
           logE_("ERROR","ingestStockJsonFast", String(e), id);
-        }
-      }
-    }
-  }
-}
-
-// ========== VENTES ==========
-function ingestSalesFast_(defs){
-  const done = GmailApp.getUserLabelByName("Traite") || GmailApp.createLabel("Traite");
-  const err  = GmailApp.getUserLabelByName("Erreur") || GmailApp.createLabel("Erreur");
-  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName("Ventes");
-  defs.forEach(({label, platform}) => {
-    const query = 'label:"'+label+'" -label:Traite -label:Erreur';
-    let threads;
-    while ((threads = nextThreads_(query, 25)).length) {
-      for (const t of threads) {
-        const msgs = t.getMessages();
-        for (const m of msgs) {
-          const id = m.getId();
-          if (seenProcId_(id)) continue;
-          const parsed = parseSaleMessage_(platform, m);
-          if (!parsed) { addProcId_(id); continue; }
-          try {
-            // utilise l'override Étape 8
-            insertSale_(sh, parsed.data);
-            t.addLabel(done);
-            addProcId_(id);
-          } catch (e){
-            t.addLabel(err);
-            logE_("ERROR","ingestSalesFast", String(e), id);
-          }
-        }
-      }
-    }
-  });
-}
-
-// ========== FAVORIS / OFFRES ==========
-function ingestFavsOffersFast_(defs){
-  const done = GmailApp.getUserLabelByName("Traite") || GmailApp.createLabel("Traite");
-  const err  = GmailApp.getUserLabelByName("Erreur") || GmailApp.createLabel("Erreur");
-  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName("Stock");
-  defs.forEach(({label,type})=>{
-    const query = 'label:"'+label+'" -label:Traite -label:Erreur';
-    let threads;
-    while ((threads = nextThreads_(query, 50)).length) {
-      for (const t of threads) {
-        for (const m of t.getMessages()) {
-          const id = m.getId();
-          if (seenProcId_(id)) continue;
-          const parsed = parseFavOfferMessage_(type, m);
-          if (!parsed) { addProcId_(id); continue; }
-          try {
-            bumpCounter_(sh, parsed.data);
-            t.addLabel(done);
-            addProcId_(id);
-          } catch (e){
-            t.addLabel(err);
-            logE_("ERROR","ingestFavOfferFast", String(e), id);
-          }
-        }
-      }
-    }
-  });
-}
-
-// ========== ACHATS Vinted ==========
-function ingestPurchasesVintedFast_(label){
-  const done = GmailApp.getUserLabelByName("Traite") || GmailApp.createLabel("Traite");
-  const err  = GmailApp.getUserLabelByName("Erreur") || GmailApp.createLabel("Erreur");
-  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName("Achats");
-  const query = 'label:"'+label+'" -label:Traite -label:Erreur';
-  let threads;
-  while ((threads = nextThreads_(query, 25)).length) {
-    for (const t of threads) {
-      for (const m of t.getMessages()) {
-        const id = m.getId();
-        if (seenProcId_(id)) continue;
-        const parsed = parsePurchaseVinted_(m);
-        if (!parsed) { addProcId_(id); continue; }
-        try {
-          const row = Math.max(2, sh.getLastRow()+1);
-          sh.getRange(row,1).setValue(parsed.data.date);
-          sh.getRange(row,2).setValue(parsed.data.fournisseur);
-          sh.getRange(row,3).setValue(parsed.data.price);
-          sh.getRange(row,5).setValue(parsed.data.brand);
-          sh.getRange(row,6).setValue(parsed.data.size);
-          t.addLabel(done);
-          addProcId_(id);
-        } catch (e){
-          t.addLabel(err);
-          logE_("ERROR","ingestPurchasesFast", String(e), id);
-        }
-      }
-    }
-  }
-}
