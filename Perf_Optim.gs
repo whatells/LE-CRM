@@ -68,8 +68,26 @@ function step10RemoveTriggers() {
 
 // --- Purge caches/états ---
 function step10ClearCaches() {
-  CacheService.getUserCache().removeAll(["PROC_IDS", "THREAD_CURSOR"]);
-  stateDel_("PROC_IDS");
-  stateDel_("THREAD_CURSOR");
+  const cache = CacheService.getUserCache();
+  cache.remove("PROC_IDS");
+  cache.remove("THREAD_CURSOR");
+
+  const props = PropertiesService.getUserProperties();
+  const all = props.getProperties();
+  Object.keys(all).forEach(function(key) {
+    if (key === "PROC_IDS" || key === "THREAD_CURSOR" || key.indexOf("THREAD_CURSOR::") === 0) {
+      props.deleteProperty(key);
+    }
+  });
+
+  if (typeof PROC_IDS_FAST_CACHE !== "undefined") {
+    PROC_IDS_FAST_CACHE = null;
+  }
+  if (typeof PROC_IDS_CACHE_ !== "undefined") {
+    PROC_IDS_CACHE_ = null;
+  }
+  if (typeof PROC_IDS_SHEET_SYNCED_ !== "undefined") {
+    PROC_IDS_SHEET_SYNCED_ = false;
+  }
   logE_("INFO","Step10","Caches & états purgés","");
 }

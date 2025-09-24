@@ -80,11 +80,27 @@ function ensureSheets_(ss, order, headersBySheet) {
   order.forEach(function(name) {
     var sh = map[name];
     var headers = headersBySheet[name] || [];
-    sh.clear({ contentsOnly: true });
-    if (headers.length) {
-      sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold");
+    if (!headers.length) return;
+
+    var headerRange = sh.getRange(1, 1, 1, headers.length);
+    var current = headerRange.getValues()[0];
+    var needsUpdate = current.length !== headers.length || headers.some(function(h, idx) {
+      return String(current[idx] || "") !== h;
+    });
+    if (needsUpdate) {
+      headerRange.setValues([headers]);
+    }
+    headerRange.setFontWeight("bold");
+    if (sh.getFrozenRows() < 1) {
       sh.setFrozenRows(1);
-      headers.forEach(function(_, i) { sh.setColumnWidth(i + 1, 160); });
+    }
+    headers.forEach(function(_, i) {
+      sh.setColumnWidth(i + 1, 160);
+    });
+
+    var lastCol = sh.getLastColumn();
+    if (lastCol > headers.length) {
+      sh.getRange(1, headers.length + 1, 1, lastCol - headers.length).clearContent();
     }
   });
 
@@ -191,18 +207,24 @@ function seedExamples_(sheets) {
   Object.keys(HEADERS).forEach(function(name) {
     var sh = sheets[name];
     var cols = HEADERS[name].length;
+    if (!cols) return;
+    if (sh.getLastRow() > 1) return;
     var rows = Math.max(SAMPLE_ROWS, 10);
     var data = Array(rows).fill(0).map(function(){ return Array(cols).fill(""); });
     sh.getRange(2, 1, rows, cols).setValues(data);
   });
 
   var stock = sheets["Stock"];
-  stock.getRange("A2:F2").setValues([["01/01/2025", "A1", "Chemise bleu A1", "", "Haut", "MarqueX"]]);
-  stock.getRange("I2").setValue(10);
+  if (stock.getLastRow() <= 1) {
+    stock.getRange("A2:F2").setValues([["01/01/2025", "A1", "Chemise bleu A1", "", "Haut", "MarqueX"]]);
+    stock.getRange("I2").setValue(10);
+  }
 
   var ventes = sheets["Ventes"];
-  ventes.getRange("A2:D2").setValues([["02/01/2025", "Vinted", "Chemise bleu A1", 20]]);
-  ventes.getRange("H2").setValue("A1");
+  if (ventes.getLastRow() <= 1) {
+    ventes.getRange("A2:D2").setValues([["02/01/2025", "Vinted", "Chemise bleu A1", 20]]);
+    ventes.getRange("H2").setValue("A1");
+  }
 }
 
 /** Protections */

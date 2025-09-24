@@ -21,26 +21,64 @@ function ingestAllLabelsFast(){
 }
 
 // --- Proc IDs (idempotence mémoire + persistance légère) ---
+const PROC_IDS_FAST_KEY = "PROC_IDS";
+let PROC_IDS_FAST_CACHE = null;
+
 function getProcIds_(){
-  return stateGet_("PROC_IDS", {});
+  if (!PROC_IDS_FAST_CACHE) {
+    PROC_IDS_FAST_CACHE = stateGet_(PROC_IDS_FAST_KEY, {}) || {};
+  }
+  return PROC_IDS_FAST_CACHE;
 }
 function addProcId_(id){
+  if (!id) return;
   const map = getProcIds_();
-  map[id] = 1;
-  statePut_("PROC_IDS", map);
+  map[id] = Date.now();
+  pruneProcIdsFast_(map);
+  statePut_(PROC_IDS_FAST_KEY, map);
 }
 function seenProcId_(id){
   const map = getProcIds_();
   return !!map[id];
 }
 
+function pruneProcIdsFast_(map){
+  const keys = Object.keys(map);
+  const LIMIT = 500;
+  if (keys.length <= LIMIT) return;
+  keys.sort((a,b) => Number(map[a] || 0) - Number(map[b] || 0));
+  while (keys.length > LIMIT) {
+    const key = keys.shift();
+    delete map[key];
+  }
+}
+
 // --- Pagination threads (curseur en state) ---
 function nextThreads_(query, batchSize){
   const cursorKey = "THREAD_CURSOR::"+query;
-  const page = stateGet_(cursorKey, 0);
-  const threads = withBackoff_(()=>GmailApp.search(query, page*batchSize, batchSize));
-  if (threads.length === 0) return [];
-  statePut_(cursorKey, page + 1);
+  const now = Date.now();
+  let cursor = stateGet_(cursorKey, null);
+  if (typeof cursor === 'number') {
+    cursor = { page: cursor, ts: 0, done: false };
+  }
+  if (!cursor) {
+    cursor = { page: 0, ts: now, done: false };
+  } else if (cursor.done) {
+    stateDel_(cursorKey);
+    return [];
+  } else if (cursor.ts && now - cursor.ts > 3600000) {
+    cursor = { page: 0, ts: now, done: false };
+  }
+
+  const page = cursor.page || 0;
+  const threads = withBackoff_(() => GmailApp.search(query, page * batchSize, batchSize));
+  if (threads.length === 0) {
+    stateDel_(cursorKey);
+    return [];
+  }
+
+  cursor = { page: page + 1, ts: now, done: threads.length < batchSize };
+  statePut_(cursorKey, cursor);
   return threads;
 }
 
