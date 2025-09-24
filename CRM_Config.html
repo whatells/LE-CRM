@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Configuration CRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include('CRM_Styles'); ?>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">⚙️</span>
+          <span class="logo-text">Configuration CRM</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="saveConfiguration()">
+            <span class="icon">💾</span>
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <div class="view active">
+        <div class="view-header">
+          <h1>⚙️ Configuration</h1>
+          <p class="view-subtitle">Paramétrez votre CRM selon vos besoins</p>
+        </div>
+
+        <div class="config-sections">
+          <!-- Section Général -->
+          <div class="config-section">
+            <h3>🏢 Informations générales</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Nom de l'entreprise</label>
+                <input type="text" id="company-name" class="form-input" placeholder="Mon entreprise">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Devise</label>
+                <select id="currency" class="form-select">
+                  <option value="EUR">Euro (€)</option>
+                  <option value="USD">Dollar ($)</option>
+                  <option value="GBP">Livre (£)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Plateformes -->
+          <div class="config-section">
+            <h3>🌐 Plateformes de vente</h3>
+            <div class="platforms-config">
+              <div class="platform-item">
+                <div class="platform-header">
+                  <h4>Vinted</h4>
+                  <label class="switch">
+                    <input type="checkbox" id="platform-vinted" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="platform-settings">
+                  <div class="form-group">
+                    <label class="form-label">Commission (%)</label>
+                    <input type="number" id="vinted-commission" class="form-input" value="12" step="0.1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Frais fixes (€)</label>
+                    <input type="number" id="vinted-fees" class="form-input" value="0.70" step="0.01">
+                  </div>
+                </div>
+              </div>
+
+              <div class="platform-item">
+                <div class="platform-header">
+                  <h4>Vestiaire Collective</h4>
+                  <label class="switch">
+                    <input type="checkbox" id="platform-vestiaire">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="platform-settings">
+                  <div class="form-group">
+                    <label class="form-label">Commission (%)</label>
+                    <input type="number" id="vestiaire-commission" class="form-input" value="25" step="0.1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Frais fixes (€)</label>
+                    <input type="number" id="vestiaire-fees" class="form-input" value="0" step="0.01">
+                  </div>
+                </div>
+              </div>
+
+              <div class="platform-item">
+                <div class="platform-header">
+                  <h4>eBay</h4>
+                  <label class="switch">
+                    <input type="checkbox" id="platform-ebay">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="platform-settings">
+                  <div class="form-group">
+                    <label class="form-label">Commission (%)</label>
+                    <input type="number" id="ebay-commission" class="form-input" value="10" step="0.1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Frais fixes (€)</label>
+                    <input type="number" id="ebay-fees" class="form-input" value="0.35" step="0.01">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Catégories -->
+          <div class="config-section">
+            <h3>📂 Catégories d'articles</h3>
+            <div class="categories-config">
+              <div class="categories-list" id="categories-list">
+                <div class="category-item">
+                  <input type="text" class="form-input" value="Vêtements" readonly>
+                  <button class="btn btn-outline btn-sm" onclick="removeCategory(this)">🗑️</button>
+                </div>
+                <div class="category-item">
+                  <input type="text" class="form-input" value="Chaussures" readonly>
+                  <button class="btn btn-outline btn-sm" onclick="removeCategory(this)">🗑️</button>
+                </div>
+                <div class="category-item">
+                  <input type="text" class="form-input" value="Accessoires" readonly>
+                  <button class="btn btn-outline btn-sm" onclick="removeCategory(this)">🗑️</button>
+                </div>
+              </div>
+              <div class="add-category">
+                <input type="text" id="new-category" class="form-input" placeholder="Nouvelle catégorie">
+                <button class="btn btn-primary" onclick="addCategory()">Ajouter</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Notifications -->
+          <div class="config-section">
+            <h3>🔔 Notifications</h3>
+            <div class="notifications-config">
+              <div class="notification-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="notify-low-stock" checked>
+                  <span class="checkmark"></span>
+                  Alerter quand le stock est faible
+                </label>
+              </div>
+              <div class="notification-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="notify-new-sale" checked>
+                  <span class="checkmark"></span>
+                  Notifier les nouvelles ventes
+                </label>
+              </div>
+              <div class="notification-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="notify-margin-alert">
+                  <span class="checkmark"></span>
+                  Alerter si marge faible
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Automatisation -->
+          <div class="config-section">
+            <h3>🤖 Automatisation</h3>
+            <div class="automation-config">
+              <div class="automation-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="auto-sku-generation" checked>
+                  <span class="checkmark"></span>
+                  Génération automatique des SKU
+                </label>
+              </div>
+              <div class="automation-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="auto-price-calculation" checked>
+                  <span class="checkmark"></span>
+                  Calcul automatique des prix cibles
+                </label>
+              </div>
+              <div class="automation-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="auto-margin-calculation" checked>
+                  <span class="checkmark"></span>
+                  Calcul automatique des marges
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Sauvegarde -->
+          <div class="config-section">
+            <h3>💾 Sauvegarde et export</h3>
+            <div class="backup-config">
+              <div class="backup-item">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="auto-backup" checked>
+                  <span class="checkmark"></span>
+                  Sauvegarde automatique quotidienne
+                </label>
+              </div>
+              <div class="backup-actions">
+                <button class="btn btn-outline" onclick="createBackup()">
+                  <span class="icon">📤</span>
+                  Créer une sauvegarde
+                </button>
+                <button class="btn btn-outline" onclick="exportData()">
+                  <span class="icon">📊</span>
+                  Exporter toutes les données
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Sauvegarde en cours...</p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .config-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .config-section {
+      background: var(--bg-primary);
+      padding: 24px;
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .config-section h3 {
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      font-size: 18px;
+      font-weight: 600;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .platforms-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .platform-item {
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      background: var(--bg-secondary);
+    }
+
+    .platform-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .platform-header h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .platform-settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Switch Toggle */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Categories */
+    .categories-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .category-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .category-item .form-input {
+      flex: 1;
+    }
+
+    .add-category {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .add-category .form-input {
+      flex: 1;
+    }
+
+    /* Notifications et Automation */
+    .notifications-config,
+    .automation-config {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .notification-item,
+    .automation-item {
+      padding: 8px 0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      margin-right: 12px;
+      transform: scale(1.2);
+    }
+
+    /* Backup */
+    .backup-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .backup-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .platform-settings {
+        grid-template-columns: 1fr;
+      }
+      
+      .backup-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+  <script>
+    // Variables globales
+    let configData = {};
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+      loadConfiguration();
+    });
+
+    function loadConfiguration() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(function(data) {
+          hideLoading();
+          configData = data;
+          populateForm(data);
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('Erreur lors du chargement de la configuration: ' + error);
+        })
+        .getConfiguration();
+    }
+
+    function populateForm(data) {
+      // Informations générales
+      if (data.companyName) document.getElementById('company-name').value = data.companyName;
+      if (data.currency) document.getElementById('currency').value = data.currency;
+
+      // Plateformes
+      if (data.platforms) {
+        Object.keys(data.platforms).forEach(platform => {
+          const platformData = data.platforms[platform];
+          const checkbox = document.getElementById('platform-' + platform);
+          const commission = document.getElementById(platform + '-commission');
+          const fees = document.getElementById(platform + '-fees');
+          
+          if (checkbox) checkbox.checked = platformData.enabled || false;
+          if (commission) commission.value = platformData.commission || 0;
+          if (fees) fees.value = platformData.fees || 0;
+        });
+      }
+
+      // Notifications
+      if (data.notifications) {
+        Object.keys(data.notifications).forEach(key => {
+          const checkbox = document.getElementById('notify-' + key.replace(/([A-Z])/g, '-$1').toLowerCase());
+          if (checkbox) checkbox.checked = data.notifications[key] || false;
+        });
+      }
+
+      // Automatisation
+      if (data.automation) {
+        Object.keys(data.automation).forEach(key => {
+          const checkbox = document.getElementById('auto-' + key.replace(/([A-Z])/g, '-$1').toLowerCase());
+          if (checkbox) checkbox.checked = data.automation[key] || false;
+        });
+      }
+
+      // Catégories
+      if (data.categories) {
+        updateCategoriesList(data.categories);
+      }
+    }
+
+    function updateCategoriesList(categories) {
+      const container = document.getElementById('categories-list');
+      container.innerHTML = categories.map(category => `
+        <div class="category-item">
+          <input type="text" class="form-input" value="${category}" readonly>
+          <button class="btn btn-outline btn-sm" onclick="removeCategory(this)">🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    function addCategory() {
+      const input = document.getElementById('new-category');
+      const categoryName = input.value.trim();
+      
+      if (!categoryName) {
+        showError('Veuillez saisir un nom de catégorie');
+        return;
+      }
+
+      const container = document.getElementById('categories-list');
+      const newCategoryHtml = `
+        <div class="category-item">
+          <input type="text" class="form-input" value="${categoryName}" readonly>
+          <button class="btn btn-outline btn-sm" onclick="removeCategory(this)">🗑️</button>
+        </div>
+      `;
+      
+      container.insertAdjacentHTML('beforeend', newCategoryHtml);
+      input.value = '';
+    }
+
+    function removeCategory(button) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+        button.parentElement.remove();
+      }
+    }
+
+    function saveConfiguration() {
+      const formData = collectFormData();
+      
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideLoading();
+          if (result.success) {
+            showSuccess('Configuration sauvegardée avec succès');
+          } else {
+            showError(result.error || 'Erreur lors de la sauvegarde');
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('Erreur: ' + error);
+        })
+        .saveConfiguration(formData);
+    }
+
+    function collectFormData() {
+      const data = {
+        companyName: document.getElementById('company-name').value,
+        currency: document.getElementById('currency').value,
+        platforms: {
+          vinted: {
+            enabled: document.getElementById('platform-vinted').checked,
+            commission: parseFloat(document.getElementById('vinted-commission').value) || 0,
+            fees: parseFloat(document.getElementById('vinted-fees').value) || 0
+          },
+          vestiaire: {
+            enabled: document.getElementById('platform-vestiaire').checked,
+            commission: parseFloat(document.getElementById('vestiaire-commission').value) || 0,
+            fees: parseFloat(document.getElementById('vestiaire-fees').value) || 0
+          },
+          ebay: {
+            enabled: document.getElementById('platform-ebay').checked,
+            commission: parseFloat(document.getElementById('ebay-commission').value) || 0,
+            fees: parseFloat(document.getElementById('ebay-fees').value) || 0
+          }
+        },
+        categories: Array.from(document.querySelectorAll('.category-item input')).map(input => input.value),
+        notifications: {
+          lowStock: document.getElementById('notify-low-stock').checked,
+          newSale: document.getElementById('notify-new-sale').checked,
+          marginAlert: document.getElementById('notify-margin-alert').checked
+        },
+        automation: {
+          skuGeneration: document.getElementById('auto-sku-generation').checked,
+          priceCalculation: document.getElementById('auto-price-calculation').checked,
+          marginCalculation: document.getElementById('auto-margin-calculation').checked
+        },
+        backup: {
+          autoBackup: document.getElementById('auto-backup').checked
+        }
+      };
+      
+      return data;
+    }
+
+    function createBackup() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideLoading();
+          if (result.success) {
+            showSuccess('Sauvegarde créée avec succès');
+            if (result.url) {
+              window.open(result.url, '_blank');
+            }
+          } else {
+            showError(result.error || 'Erreur lors de la création de la sauvegarde');
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('Erreur: ' + error);
+        })
+        .createBackup();
+    }
+
+    function exportData() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideLoading();
+          if (result.success) {
+            showSuccess('Export créé avec succès');
+            if (result.url) {
+              window.open(result.url, '_blank');
+            }
+          } else {
+            showError(result.error || 'Erreur lors de l\'export');
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('Erreur: ' + error);
+        })
+        .exportAllData();
+    }
+
+    // Utilitaires
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    function showSuccess(message) {
+      alert('✅ ' + message);
+    }
+
+    function showError(message) {
+      alert('❌ ' + message);
+    }
+  </script>
+</body>
+</html>

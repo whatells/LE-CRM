@@ -1,0 +1,813 @@
+<script>
+// Variables globales
+let currentView = 'dashboard';
+let currentData = {};
+let isLoading = false;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  initializeApp();
+});
+
+function initializeApp() {
+  console.log('🚀 Initialisation du CRM...');
+  loadDashboardData();
+  setupEventListeners();
+}
+
+function setupEventListeners() {
+  // Recherche en temps réel
+  const searchInputs = document.querySelectorAll('.search-input');
+  searchInputs.forEach(input => {
+    input.addEventListener('input', debounce(handleSearch, 300));
+  });
+
+  // Filtres
+  const filterSelects = document.querySelectorAll('.filter-select');
+  filterSelects.forEach(select => {
+    select.addEventListener('change', handleFilter);
+  });
+
+  // Dates
+  const dateInputs = document.querySelectorAll('.filter-input[type="date"]');
+  dateInputs.forEach(input => {
+    input.addEventListener('change', handleFilter);
+  });
+}
+
+// Navigation entre vues
+function switchView(viewName) {
+  if (isLoading) return;
+  
+  // Masquer toutes les vues
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.remove('active');
+  });
+  
+  // Désactiver tous les nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Activer la vue sélectionnée
+  const targetView = document.getElementById(viewName + '-view');
+  const targetNav = document.querySelector(`[data-view="${viewName}"]`);
+  
+  if (targetView && targetNav) {
+    targetView.classList.add('active');
+    targetNav.classList.add('active');
+    currentView = viewName;
+    
+    // Charger les données spécifiques à la vue
+    loadViewData(viewName);
+  }
+}
+
+// Chargement des données par vue
+function loadViewData(viewName) {
+  switch(viewName) {
+    case 'dashboard':
+      loadDashboardData();
+      break;
+    case 'stock':
+      loadStockData();
+      break;
+    case 'ventes':
+      loadSalesData();
+      break;
+    case 'achats':
+      loadPurchasesData();
+      break;
+    case 'analytics':
+      loadAnalyticsData();
+      break;
+  }
+}
+
+// Dashboard
+function loadDashboardData() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      updateDashboard(data);
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur lors du chargement du dashboard: ' + error);
+    })
+    .getDashboardData();
+}
+
+function updateDashboard(data) {
+  // Mise à jour des statistiques
+  document.getElementById('total-revenue').textContent = formatCurrency(data.totalRevenue || 0);
+  document.getElementById('total-stock').textContent = data.totalStock || 0;
+  document.getElementById('total-sales').textContent = data.totalSales || 0;
+  document.getElementById('avg-margin').textContent = formatPercentage(data.avgMargin || 0);
+  
+  // Mise à jour de l'activité récente
+  updateRecentActivity(data.recentActivity || []);
+}
+
+function updateRecentActivity(activities) {
+  const container = document.getElementById('recent-activity');
+  
+  if (!activities.length) {
+    container.innerHTML = '<div class="text-center text-secondary">Aucune activité récente</div>';
+    return;
+  }
+  
+  const html = activities.map(activity => `
+    <div class="activity-item">
+      <div class="activity-icon">${getActivityIcon(activity.type)}</div>
+      <div class="activity-content">
+        <div class="activity-title">${activity.title}</div>
+        <div class="activity-time">${formatDate(activity.date)}</div>
+      </div>
+    </div>
+  `).join('');
+  
+  container.innerHTML = html;
+}
+
+// Stock
+function loadStockData() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      updateStockTable(data);
+      updateStockFilters(data);
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur lors du chargement du stock: ' + error);
+    })
+    .getStockData();
+}
+
+function updateStockTable(data) {
+  const tbody = document.querySelector('#stock-table tbody');
+  
+  if (!data.items || !data.items.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun article en stock</td></tr>';
+    return;
+  }
+  
+  const html = data.items.map(item => `
+    <tr>
+      <td><strong>${item.sku}</strong></td>
+      <td>${item.title}</td>
+      <td>${item.category}</td>
+      <td>${formatCurrency(item.purchasePrice)}</td>
+      <td>${formatCurrency(item.targetPrice)}</td>
+      <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+      <td>
+        <div class="action-buttons">
+          <button class="action-btn action-btn-edit" onclick="editStock('${item.id}')">✏️</button>
+          <button class="action-btn action-btn-delete" onclick="deleteStock('${item.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  tbody.innerHTML = html;
+  currentData.stock = data.items;
+}
+
+function updateStockFilters(data) {
+  // Mise à jour du filtre catégories
+  const categorySelect = document.getElementById('stock-category');
+  const categories = [...new Set(data.items.map(item => item.category).filter(Boolean))];
+  
+  categorySelect.innerHTML = '<option value="">Toutes les catégories</option>' +
+    categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+}
+
+// Ventes
+function loadSalesData() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      updateSalesTable(data);
+      updateSalesFilters(data);
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur lors du chargement des ventes: ' + error);
+    })
+    .getSalesData();
+}
+
+function updateSalesTable(data) {
+  const tbody = document.querySelector('#sales-table tbody');
+  
+  if (!data.sales || !data.sales.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucune vente enregistrée</td></tr>';
+    return;
+  }
+  
+  const html = data.sales.map(sale => `
+    <tr>
+      <td>${formatDate(sale.date)}</td>
+      <td>${sale.platform}</td>
+      <td>${sale.title}</td>
+      <td>${formatCurrency(sale.price)}</td>
+      <td>${formatCurrency(sale.fees)}</td>
+      <td class="${sale.margin >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(sale.margin)}</td>
+      <td>
+        <div class="action-buttons">
+          <button class="action-btn action-btn-edit" onclick="editSale('${sale.id}')">✏️</button>
+          <button class="action-btn action-btn-delete" onclick="deleteSale('${sale.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  tbody.innerHTML = html;
+  currentData.sales = data.sales;
+}
+
+function updateSalesFilters(data) {
+  // Mise à jour du filtre plateformes
+  const platformSelect = document.getElementById('sales-platform');
+  const platforms = [...new Set(data.sales.map(sale => sale.platform).filter(Boolean))];
+  
+  platformSelect.innerHTML = '<option value="">Toutes les plateformes</option>' +
+    platforms.map(platform => `<option value="${platform}">${platform}</option>`).join('');
+}
+
+// Achats
+function loadPurchasesData() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      updatePurchasesTable(data);
+      updatePurchasesFilters(data);
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur lors du chargement des achats: ' + error);
+    })
+    .getPurchasesData();
+}
+
+function updatePurchasesTable(data) {
+  const tbody = document.querySelector('#purchases-table tbody');
+  
+  if (!data.purchases || !data.purchases.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun achat enregistré</td></tr>';
+    return;
+  }
+  
+  const html = data.purchases.map(purchase => `
+    <tr>
+      <td>${formatDate(purchase.date)}</td>
+      <td>${purchase.supplier}</td>
+      <td>${purchase.description}</td>
+      <td>${formatCurrency(purchase.price)}</td>
+      <td>${purchase.category}</td>
+      <td><span class="status-badge status-${purchase.status}">${purchase.status}</span></td>
+      <td>
+        <div class="action-buttons">
+          <button class="action-btn action-btn-edit" onclick="editPurchase('${purchase.id}')">✏️</button>
+          <button class="action-btn action-btn-delete" onclick="deletePurchase('${purchase.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  tbody.innerHTML = html;
+  currentData.purchases = data.purchases;
+}
+
+function updatePurchasesFilters(data) {
+  // Mise à jour du filtre fournisseurs
+  const supplierSelect = document.getElementById('purchases-supplier');
+  const suppliers = [...new Set(data.purchases.map(purchase => purchase.supplier).filter(Boolean))];
+  
+  supplierSelect.innerHTML = '<option value="">Tous les fournisseurs</option>' +
+    suppliers.map(supplier => `<option value="${supplier}">${supplier}</option>`).join('');
+}
+
+// Analytics
+function loadAnalyticsData() {
+  showLoading();
+  
+  const period = document.getElementById('analytics-period').value;
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      hideLoading();
+      updateAnalytics(data);
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur lors du chargement des analytics: ' + error);
+    })
+    .getAnalyticsData(period);
+}
+
+function updateAnalytics(data) {
+  // Mise à jour des graphiques (placeholder pour l'instant)
+  updateTopItems(data.topItems || []);
+}
+
+function updateTopItems(items) {
+  const container = document.getElementById('top-items');
+  
+  if (!items.length) {
+    container.innerHTML = '<div class="text-center text-secondary">Aucune donnée disponible</div>';
+    return;
+  }
+  
+  const html = items.map((item, index) => `
+    <div class="activity-item">
+      <div class="activity-icon">${index + 1}</div>
+      <div class="activity-content">
+        <div class="activity-title">${item.title}</div>
+        <div class="activity-time">${formatCurrency(item.revenue)} • ${item.sales} ventes</div>
+      </div>
+    </div>
+  `).join('');
+  
+  container.innerHTML = html;
+}
+
+// Actions rapides
+function quickAddStock() {
+  showModal('Ajouter un article', getStockForm(), [
+    { text: 'Annuler', class: 'btn-outline', action: 'closeModal()' },
+    { text: 'Ajouter', class: 'btn-primary', action: 'saveStock()' }
+  ]);
+}
+
+function quickAddSale() {
+  showModal('Nouvelle vente', getSaleForm(), [
+    { text: 'Annuler', class: 'btn-outline', action: 'closeModal()' },
+    { text: 'Enregistrer', class: 'btn-primary', action: 'saveSale()' }
+  ]);
+}
+
+function quickAddPurchase() {
+  showModal('Nouvel achat', getPurchaseForm(), [
+    { text: 'Annuler', class: 'btn-outline', action: 'closeModal()' },
+    { text: 'Enregistrer', class: 'btn-primary', action: 'savePurchase()' }
+  ]);
+}
+
+// Formulaires
+function getStockForm() {
+  return `
+    <div class="form-group">
+      <label class="form-label">SKU *</label>
+      <input type="text" id="stock-sku" class="form-input" placeholder="Ex: A001" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="stock-title" class="form-input" placeholder="Titre de l'article" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <select id="stock-category-input" class="form-select">
+        <option value="">Sélectionner une catégorie</option>
+        <option value="Vêtements">Vêtements</option>
+        <option value="Chaussures">Chaussures</option>
+        <option value="Accessoires">Accessoires</option>
+        <option value="Sacs">Sacs</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix d'achat</label>
+      <input type="number" id="stock-purchase-price" class="form-input" placeholder="0.00" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix cible</label>
+      <input type="number" id="stock-target-price" class="form-input" placeholder="0.00" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="stock-description" class="form-textarea" placeholder="Description de l'article"></textarea>
+    </div>
+  `;
+}
+
+function getSaleForm() {
+  return `
+    <div class="form-group">
+      <label class="form-label">Article (SKU) *</label>
+      <input type="text" id="sale-sku" class="form-input" placeholder="SKU de l'article vendu" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Plateforme *</label>
+      <select id="sale-platform" class="form-select" required>
+        <option value="">Sélectionner une plateforme</option>
+        <option value="Vinted">Vinted</option>
+        <option value="Vestiaire Collective">Vestiaire Collective</option>
+        <option value="eBay">eBay</option>
+        <option value="Leboncoin">Leboncoin</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix de vente *</label>
+      <input type="number" id="sale-price" class="form-input" placeholder="0.00" step="0.01" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Frais</label>
+      <input type="number" id="sale-fees" class="form-input" placeholder="0.00" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Acheteur</label>
+      <input type="text" id="sale-buyer" class="form-input" placeholder="Nom de l'acheteur">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date de vente</label>
+      <input type="date" id="sale-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
+    </div>
+  `;
+}
+
+function getPurchaseForm() {
+  return `
+    <div class="form-group">
+      <label class="form-label">Fournisseur *</label>
+      <input type="text" id="purchase-supplier" class="form-input" placeholder="Nom du fournisseur" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description *</label>
+      <input type="text" id="purchase-description" class="form-input" placeholder="Description de l'achat" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix d'achat *</label>
+      <input type="number" id="purchase-price" class="form-input" placeholder="0.00" step="0.01" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Catégorie</label>
+      <select id="purchase-category" class="form-select">
+        <option value="">Sélectionner une catégorie</option>
+        <option value="Vêtements">Vêtements</option>
+        <option value="Chaussures">Chaussures</option>
+        <option value="Accessoires">Accessoires</option>
+        <option value="Sacs">Sacs</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date d'achat</label>
+      <input type="date" id="purchase-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="purchase-notes" class="form-textarea" placeholder="Notes sur cet achat"></textarea>
+    </div>
+  `;
+}
+
+// Sauvegarde des données
+function saveStock() {
+  const data = {
+    sku: document.getElementById('stock-sku').value,
+    title: document.getElementById('stock-title').value,
+    category: document.getElementById('stock-category-input').value,
+    purchasePrice: parseFloat(document.getElementById('stock-purchase-price').value) || 0,
+    targetPrice: parseFloat(document.getElementById('stock-target-price').value) || 0,
+    description: document.getElementById('stock-description').value
+  };
+  
+  if (!data.sku || !data.title) {
+    showError('Veuillez remplir les champs obligatoires');
+    return;
+  }
+  
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      closeModal();
+      if (result.success) {
+        showSuccess('Article ajouté avec succès');
+        if (currentView === 'stock') {
+          loadStockData();
+        }
+        loadDashboardData(); // Refresh dashboard stats
+      } else {
+        showError(result.error || 'Erreur lors de l\'ajout');
+      }
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur: ' + error);
+    })
+    .addStock(data);
+}
+
+function saveSale() {
+  const data = {
+    sku: document.getElementById('sale-sku').value,
+    platform: document.getElementById('sale-platform').value,
+    price: parseFloat(document.getElementById('sale-price').value) || 0,
+    fees: parseFloat(document.getElementById('sale-fees').value) || 0,
+    buyer: document.getElementById('sale-buyer').value,
+    date: document.getElementById('sale-date').value
+  };
+  
+  if (!data.sku || !data.platform || !data.price) {
+    showError('Veuillez remplir les champs obligatoires');
+    return;
+  }
+  
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      closeModal();
+      if (result.success) {
+        showSuccess('Vente enregistrée avec succès');
+        if (currentView === 'ventes') {
+          loadSalesData();
+        }
+        loadDashboardData(); // Refresh dashboard stats
+      } else {
+        showError(result.error || 'Erreur lors de l\'enregistrement');
+      }
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur: ' + error);
+    })
+    .addSale(data);
+}
+
+function savePurchase() {
+  const data = {
+    supplier: document.getElementById('purchase-supplier').value,
+    description: document.getElementById('purchase-description').value,
+    price: parseFloat(document.getElementById('purchase-price').value) || 0,
+    category: document.getElementById('purchase-category').value,
+    date: document.getElementById('purchase-date').value,
+    notes: document.getElementById('purchase-notes').value
+  };
+  
+  if (!data.supplier || !data.description || !data.price) {
+    showError('Veuillez remplir les champs obligatoires');
+    return;
+  }
+  
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      closeModal();
+      if (result.success) {
+        showSuccess('Achat enregistré avec succès');
+        if (currentView === 'achats') {
+          loadPurchasesData();
+        }
+        loadDashboardData(); // Refresh dashboard stats
+      } else {
+        showError(result.error || 'Erreur lors de l\'enregistrement');
+      }
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur: ' + error);
+    })
+    .addPurchase(data);
+}
+
+// Gestion des modals
+function showModal(title, body, buttons) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  
+  const footer = document.getElementById('modal-footer');
+  footer.innerHTML = buttons.map(btn => 
+    `<button class="btn ${btn.class}" onclick="${btn.action}">${btn.text}</button>`
+  ).join('');
+  
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// Gestion du loading
+function showLoading() {
+  isLoading = true;
+  document.getElementById('loading-overlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+  isLoading = false;
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+// Notifications
+function showSuccess(message) {
+  // Implémentation simple - peut être améliorée avec une vraie notification
+  alert('✅ ' + message);
+}
+
+function showError(message) {
+  // Implémentation simple - peut être améliorée avec une vraie notification
+  alert('❌ ' + message);
+}
+
+// Utilitaires
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount || 0);
+}
+
+function formatPercentage(value) {
+  return (value || 0).toFixed(1) + '%';
+}
+
+function formatDate(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('fr-FR');
+}
+
+function getActivityIcon(type) {
+  const icons = {
+    'sale': '💰',
+    'purchase': '🛒',
+    'stock': '📦',
+    'default': '📋'
+  };
+  return icons[type] || icons.default;
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// Gestion des filtres et recherche
+function handleSearch(event) {
+  const searchTerm = event.target.value.toLowerCase();
+  const viewName = currentView;
+  
+  // Filtrer les données selon la vue actuelle
+  if (currentData[viewName]) {
+    const filteredData = currentData[viewName].filter(item => {
+      return Object.values(item).some(value => 
+        String(value).toLowerCase().includes(searchTerm)
+      );
+    });
+    
+    // Mettre à jour l'affichage avec les données filtrées
+    updateTableWithFilteredData(viewName, filteredData);
+  }
+}
+
+function handleFilter() {
+  // Recharger les données avec les filtres appliqués
+  loadViewData(currentView);
+}
+
+function updateTableWithFilteredData(viewName, data) {
+  switch(viewName) {
+    case 'stock':
+      updateStockTable({ items: data });
+      break;
+    case 'ventes':
+      updateSalesTable({ sales: data });
+      break;
+    case 'achats':
+      updatePurchasesTable({ purchases: data });
+      break;
+  }
+}
+
+// Actions sur les éléments
+function editStock(id) {
+  // TODO: Implémenter l'édition
+  console.log('Edit stock:', id);
+}
+
+function deleteStock(id) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+    // TODO: Implémenter la suppression
+    console.log('Delete stock:', id);
+  }
+}
+
+function editSale(id) {
+  // TODO: Implémenter l'édition
+  console.log('Edit sale:', id);
+}
+
+function deleteSale(id) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
+    // TODO: Implémenter la suppression
+    console.log('Delete sale:', id);
+  }
+}
+
+function editPurchase(id) {
+  // TODO: Implémenter l'édition
+  console.log('Edit purchase:', id);
+}
+
+function deletePurchase(id) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cet achat ?')) {
+    // TODO: Implémenter la suppression
+    console.log('Delete purchase:', id);
+  }
+}
+
+// Actions globales
+function refreshData() {
+  loadViewData(currentView);
+}
+
+function openQuickAdd() {
+  switch(currentView) {
+    case 'stock':
+      quickAddStock();
+      break;
+    case 'ventes':
+      quickAddSale();
+      break;
+    case 'achats':
+      quickAddPurchase();
+      break;
+    default:
+      quickAddStock();
+  }
+}
+
+function generateReport() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      if (result.success) {
+        showSuccess('Rapport généré avec succès');
+        // Optionnel: ouvrir le rapport
+        if (result.url) {
+          window.open(result.url, '_blank');
+        }
+      } else {
+        showError(result.error || 'Erreur lors de la génération du rapport');
+      }
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      showError('Erreur: ' + error);
+    })
+    .generateReport();
+}
+
+// Export functions
+function exportStock() {
+  window.open('https://docs.google.com/spreadsheets/d/' + getSpreadsheetId() + '/export?format=xlsx&gid=' + getStockSheetId());
+}
+
+function exportSales() {
+  window.open('https://docs.google.com/spreadsheets/d/' + getSpreadsheetId() + '/export?format=xlsx&gid=' + getSalesSheetId());
+}
+
+function exportPurchases() {
+  window.open('https://docs.google.com/spreadsheets/d/' + getSpreadsheetId() + '/export?format=xlsx&gid=' + getPurchasesSheetId());
+}
+
+// Fonctions utilitaires pour les exports (à implémenter côté serveur)
+function getSpreadsheetId() {
+  // Cette fonction sera implémentée côté serveur
+  return '';
+}
+
+function getStockSheetId() {
+  return '';
+}
+
+function getSalesSheetId() {
+  return '';
+}
+
+function getPurchasesSheetId() {
+  return '';
+}
+</script>

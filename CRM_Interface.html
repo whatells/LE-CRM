@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CRM Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include('CRM_Styles'); ?>
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">🚀</span>
+          <span class="logo-text">CRM Pro</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="refreshData()">
+            <span class="icon">🔄</span>
+            Actualiser
+          </button>
+          <button class="btn btn-primary" onclick="openQuickAdd()">
+            <span class="icon">➕</span>
+            Ajouter
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="app-nav">
+      <div class="nav-content">
+        <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="stock" onclick="switchView('stock')">
+          <span class="nav-icon">📦</span>
+          <span class="nav-text">Stock</span>
+        </button>
+        <button class="nav-item" data-view="ventes" onclick="switchView('ventes')">
+          <span class="nav-icon">💰</span>
+          <span class="nav-text">Ventes</span>
+        </button>
+        <button class="nav-item" data-view="achats" onclick="switchView('achats')">
+          <span class="nav-icon">🛒</span>
+          <span class="nav-text">Achats</span>
+        </button>
+        <button class="nav-item" data-view="analytics" onclick="switchView('analytics')">
+          <span class="nav-icon">📈</span>
+          <span class="nav-text">Analytics</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="view active">
+        <div class="view-header">
+          <h1>📊 Dashboard</h1>
+          <p class="view-subtitle">Vue d'ensemble de votre activité</p>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <div class="stat-value" id="total-revenue">0 €</div>
+              <div class="stat-label">Chiffre d'affaires</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <div class="stat-value" id="total-stock">0</div>
+              <div class="stat-label">Articles en stock</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+              <div class="stat-value" id="total-sales">0</div>
+              <div class="stat-label">Ventes totales</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+              <div class="stat-value" id="avg-margin">0%</div>
+              <div class="stat-label">Marge moyenne</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-content">
+          <div class="dashboard-section">
+            <h3>🔥 Activité récente</h3>
+            <div id="recent-activity" class="activity-list">
+              <div class="loading">Chargement...</div>
+            </div>
+          </div>
+          
+          <div class="dashboard-section">
+            <h3>⚡ Actions rapides</h3>
+            <div class="quick-actions">
+              <button class="quick-action-btn" onclick="quickAddStock()">
+                <span class="icon">📦</span>
+                <span>Ajouter Stock</span>
+              </button>
+              <button class="quick-action-btn" onclick="quickAddSale()">
+                <span class="icon">💰</span>
+                <span>Nouvelle Vente</span>
+              </button>
+              <button class="quick-action-btn" onclick="quickAddPurchase()">
+                <span class="icon">🛒</span>
+                <span>Nouvel Achat</span>
+              </button>
+              <button class="quick-action-btn" onclick="generateReport()">
+                <span class="icon">📊</span>
+                <span>Rapport</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock View -->
+      <div id="stock-view" class="view">
+        <div class="view-header">
+          <h1>📦 Gestion du Stock</h1>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="exportStock()">
+              <span class="icon">📤</span>
+              Exporter
+            </button>
+            <button class="btn btn-primary" onclick="addStock()">
+              <span class="icon">➕</span>
+              Ajouter Article
+            </button>
+          </div>
+        </div>
+        
+        <div class="filters-bar">
+          <input type="text" id="stock-search" placeholder="🔍 Rechercher un article..." class="search-input">
+          <select id="stock-category" class="filter-select">
+            <option value="">Toutes les catégories</option>
+          </select>
+          <select id="stock-status" class="filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="disponible">Disponible</option>
+            <option value="vendu">Vendu</option>
+            <option value="reserve">Réservé</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table id="stock-table" class="data-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Titre</th>
+                <th>Catégorie</th>
+                <th>Prix d'achat</th>
+                <th>Prix cible</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="loading">Chargement des données...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ventes View -->
+      <div id="ventes-view" class="view">
+        <div class="view-header">
+          <h1>💰 Gestion des Ventes</h1>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="exportSales()">
+              <span class="icon">📤</span>
+              Exporter
+            </button>
+            <button class="btn btn-primary" onclick="addSale()">
+              <span class="icon">➕</span>
+              Nouvelle Vente
+            </button>
+          </div>
+        </div>
+
+        <div class="filters-bar">
+          <input type="text" id="sales-search" placeholder="🔍 Rechercher une vente..." class="search-input">
+          <select id="sales-platform" class="filter-select">
+            <option value="">Toutes les plateformes</option>
+            <option value="vinted">Vinted</option>
+            <option value="vestiaire">Vestiaire Collective</option>
+            <option value="ebay">eBay</option>
+          </select>
+          <input type="date" id="sales-date-from" class="filter-input">
+          <input type="date" id="sales-date-to" class="filter-input">
+        </div>
+
+        <div class="table-container">
+          <table id="sales-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Plateforme</th>
+                <th>Article</th>
+                <th>Prix de vente</th>
+                <th>Frais</th>
+                <th>Marge</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="loading">Chargement des données...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Achats View -->
+      <div id="achats-view" class="view">
+        <div class="view-header">
+          <h1>🛒 Gestion des Achats</h1>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="exportPurchases()">
+              <span class="icon">📤</span>
+              Exporter
+            </button>
+            <button class="btn btn-primary" onclick="addPurchase()">
+              <span class="icon">➕</span>
+              Nouvel Achat
+            </button>
+          </div>
+        </div>
+
+        <div class="filters-bar">
+          <input type="text" id="purchases-search" placeholder="🔍 Rechercher un achat..." class="search-input">
+          <select id="purchases-supplier" class="filter-select">
+            <option value="">Tous les fournisseurs</option>
+          </select>
+          <input type="date" id="purchases-date-from" class="filter-input">
+          <input type="date" id="purchases-date-to" class="filter-input">
+        </div>
+
+        <div class="table-container">
+          <table id="purchases-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Fournisseur</th>
+                <th>Description</th>
+                <th>Prix d'achat</th>
+                <th>Catégorie</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="loading">Chargement des données...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics View -->
+      <div id="analytics-view" class="view">
+        <div class="view-header">
+          <h1>📈 Analytics</h1>
+          <div class="view-actions">
+            <select id="analytics-period" class="filter-select">
+              <option value="7">7 derniers jours</option>
+              <option value="30">30 derniers jours</option>
+              <option value="90">3 derniers mois</option>
+              <option value="365">12 derniers mois</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>💰 Évolution du CA</h3>
+            <div id="revenue-chart" class="chart-container">
+              <div class="chart-placeholder">Graphique à venir</div>
+            </div>
+          </div>
+          
+          <div class="analytics-card">
+            <h3>📊 Répartition par plateforme</h3>
+            <div id="platform-chart" class="chart-container">
+              <div class="chart-placeholder">Graphique à venir</div>
+            </div>
+          </div>
+          
+          <div class="analytics-card">
+            <h3>📈 Marges par catégorie</h3>
+            <div id="margin-chart" class="chart-container">
+              <div class="chart-placeholder">Graphique à venir</div>
+            </div>
+          </div>
+          
+          <div class="analytics-card">
+            <h3>🎯 Top articles</h3>
+            <div id="top-items" class="top-items-list">
+              <div class="loading">Chargement...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 id="modal-title">Modal</h3>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Modal content will be inserted here -->
+        </div>
+        <div class="modal-footer" id="modal-footer">
+          <!-- Modal buttons will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('CRM_Scripts'); ?>
+</body>
+</html>
