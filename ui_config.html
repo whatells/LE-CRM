@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Configuration du CRM</title>
+  <style>
+    body { background:#0f1115; color:#e7e9ee; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; }
+    .wrap { padding:16px 18px; }
+    h1 { font-size:20px; margin:0 0 12px; }
+    h2 { font-size:14px; margin:18px 0 8px; color:#b8c0cc; }
+    .status { padding:8px 10px; background:#141824; border:1px solid #1d2233; border-radius:10px; }
+    .hidden { display:none; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:8px; }
+    label { display:flex; flex-direction:column; font-size:12px; gap:6px; }
+    input[type="text"], input[type="number"], input[placeholder] {
+      background:#0b0d12; color:#e7e9ee; border:1px solid #23283c; border-radius:10px; padding:10px 12px; outline:none;
+    }
+    input[type="checkbox"] { transform: scale(1.2); }
+    .table { display:grid; gap:6px; }
+    .table .thead { display:grid; grid-template-columns: 1.2fr .6fr .6fr .6fr; font-size:12px; color:#93a0b5; }
+    .table .tbody { display:grid; grid-template-columns: 1.2fr .6fr .6fr .6fr; gap:6px; }
+    .actions { margin-top:14px; display:flex; align-items:center; gap:10px; }
+    #saveBtn { background:#2b5cff; color:white; border:0; border-radius:12px; padding:10px 14px; cursor:pointer; }
+    #saveBtn:hover { filter:brightness(1.05); }
+    #saveStatus { font-size:12px; color:#93a0b5; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Configuration</h1>
+
+    <div id="status" class="status">Chargement…</div>
+
+    <form id="cfgForm" class="form hidden">
+      <section>
+        <h2>Labels Gmail</h2>
+        <div class="grid">
+          <label>Ingestion Stock <input name="GMAIL_LABEL_INGEST_STOCK" placeholder="Ingestion/Stock"></label>
+          <label>Ventes · Vinted <input name="GMAIL_LABEL_SALES_VINTED" placeholder="Sales/Vinted"></label>
+          <label>Ventes · Vestiaire <input name="GMAIL_LABEL_SALES_VESTIAIRE" placeholder="Sales/Vestiaire"></label>
+          <label>Ventes · eBay <input name="GMAIL_LABEL_SALES_EBAY" placeholder="Sales/eBay"></label>
+          <label>Ventes · Leboncoin <input name="GMAIL_LABEL_SALES_LEBONCOIN" placeholder="Sales/Leboncoin"></label>
+          <label>Ventes · Whatnot <input name="GMAIL_LABEL_SALES_WHATNOT" placeholder="Sales/Whatnot"></label>
+          <label>Favoris Vinted <input name="GMAIL_LABEL_FAVORITES_VINTED" placeholder="Favorites/Vinted"></label>
+          <label>Offres Vinted <input name="GMAIL_LABEL_OFFERS_VINTED" placeholder="Offers/Vinted"></label>
+          <label>Achats Vinted <input name="GMAIL_LABEL_PURCHASES_VINTED" placeholder="Purchases/Vinted"></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Commissions</h2>
+        <div class="table">
+          <div class="thead"><div>Plateforme</div><div>Pct</div><div>Min €</div><div>Flat €</div></div>
+          <div class="tbody">
+            <div>Vinted</div>
+            <input name="COMM_VINTED_PCT" type="number" step="0.01" placeholder="0.12" />
+            <input name="COMM_VINTED_MIN" type="number" step="0.01" placeholder="0.70" />
+            <input name="COMM_VINTED_FLAT" type="number" step="0.01" placeholder="0" />
+
+            <div>Vestiaire</div>
+            <input name="COMM_VESTIAIRE_PCT" type="number" step="0.01" placeholder="0.15" />
+            <input name="COMM_VESTIAIRE_MIN" type="number" step="0.01" placeholder="0" />
+            <input name="COMM_VESTIAIRE_FLAT" type="number" step="0.01" placeholder="0" />
+
+            <div>eBay</div>
+            <input name="COMM_EBAY_PCT" type="number" step="0.01" placeholder="0.12" />
+            <input name="COMM_EBAY_MIN" type="number" step="0.01" placeholder="0" />
+            <input name="COMM_EBAY_FLAT" type="number" step="0.01" placeholder="0.35" />
+
+            <div>Leboncoin</div>
+            <input name="COMM_LEBONCOIN_PCT" type="number" step="0.01" placeholder="0.09" />
+            <input name="COMM_LEBONCOIN_MIN" type="number" step="0.01" placeholder="0" />
+            <input name="COMM_LEBONCOIN_FLAT" type="number" step="0.01" placeholder="0" />
+
+            <div>Whatnot</div>
+            <input name="COMM_WHATNOT_PCT" type="number" step="0.01" placeholder="0.08" />
+            <input name="COMM_WHATNOT_MIN" type="number" step="0.01" placeholder="0" />
+            <input name="COMM_WHATNOT_FLAT" type="number" step="0.01" placeholder="0" />
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Options globales</h2>
+        <div class="grid">
+          <label>Activer URSSAF <input name="APPLY_URSSAF" type="checkbox"></label>
+          <label>Taux URSSAF <input name="URSSAF_RATE" type="number" step="0.01" placeholder="0.22"></label>
+          <label>Inclure coûts fixes <input name="APPLY_FIXED_COSTS" type="checkbox"></label>
+          <label>Coût fixe / vente (€) <input name="FIXED_COST_PER_SALE" type="number" step="0.01" placeholder="0.40"></label>
+          <label>Arrondir marges <input name="ROUND_MARGINS" type="checkbox" checked></label>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="button" id="saveBtn">Enregistrer</button>
+        <span id="saveStatus"></span>
+      </div>
+    </form>
+  </div>
+
+  <script>
+  (function(){
+    const $ = (s,root=document)=>root.querySelector(s);
+    const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
+    function setLoading(msg){ $('#status').textContent = msg; }
+    function showForm(rows){
+      const form = $('#cfgForm');
+      form.classList.remove('hidden');
+      setLoading('');
+      rows.forEach(({key,value}) => {
+        const el = form.querySelector(`[name="${key}"]`);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+          const v = String(value||'').toLowerCase();
+          el.checked = /^(true|1|oui|yes)$/i.test(v);
+        } else {
+          el.value = (value!=null? value : '');
+        }
+      });
+    }
+    function toRows(){
+      const inputs = $$('#cfgForm input');
+      return inputs.map(el => ({ key: el.name, value: el.type==='checkbox' ? (el.checked?'TRUE':'FALSE') : el.value }));
+    }
+    function onSave(){
+      $('#saveStatus').textContent = 'Enregistrement…';
+      google.script.run.withSuccessHandler(res => {
+        $('#saveStatus').textContent = 'Sauvegardé ('+res.count+' clés)';
+      }).withFailureHandler(err => {
+        $('#saveStatus').textContent = 'Erreur: '+err;
+      }).saveConfigValues(toRows());
+    }
+    // Init
+    setLoading('Chargement de la configuration…');
+    google.script.run.withSuccessHandler(showForm).getKnownConfig();
+    document.addEventListener('click', e => { if (e.target && e.target.id==='saveBtn') onSave(); });
+  })();
+  </script>
+</body>
+</html>
