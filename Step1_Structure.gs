@@ -235,10 +235,28 @@ function seedExamples_(sheets) {
 function protectHeadersWarn_(sheets) {
   Object.keys(sheets).forEach(function(name) {
     var sh = sheets[name];
-    var prot = sh.protect();
-    prot.setDescription("Protection en-têtes (" + name + ")");
+    var desc = "Protection en-têtes (" + name + ")";
+    var protections = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET) || [];
+    var prot = null;
+    protections.forEach(function(p) {
+      if (p.getDescription() === desc) {
+        if (!prot) {
+          prot = p;
+        } else {
+          p.remove();
+        }
+      }
+    });
+    if (!prot) {
+      prot = sh.protect();
+    }
+    prot.setDescription(desc);
     prot.setWarningOnly(true);
-    prot.setUnprotectedRanges([sh.getRange(2, 1, sh.getMaxRows() - 1, sh.getLastColumn())]);
+    var ranges = [];
+    if (sh.getMaxRows() > 1 && sh.getLastColumn() > 0) {
+      ranges.push(sh.getRange(2, 1, sh.getMaxRows() - 1, sh.getLastColumn()));
+    }
+    prot.setUnprotectedRanges(ranges);
   });
 }
 

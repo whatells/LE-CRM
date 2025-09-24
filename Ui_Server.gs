@@ -17,15 +17,22 @@ function ui_getDashboard(){
   return {kpis:kpis, blocks:{}};
 }
 function ui_buildDashboard(){ buildDashboard(); return true; }
+function ui_ping(){ return {ok: true, ts: new Date().toISOString()}; }
 
 // STOCK
 function ui_getStockPage(page, size){
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName('Stock');
   const total = sh ? Math.max(0, sh.getLastRow()-1) : 0;
-  if (!sh || total===0) return {total:0, rows:[]};
-  const start = Math.max(0, (page-1)*size);
-  const rows = sh.getRange(2+start,1, Math.min(size,total-start), 15).getValues();
+  if (!sh || total === 0) return {total: 0, rows: []};
+  const effectiveSize = Math.max(1, size || 1);
+  const pages = Math.max(1, Math.ceil(total / effectiveSize));
+  const current = Math.min(pages, Math.max(1, page || 1));
+  const start = (current - 1) * effectiveSize;
+  if (start >= total) return {total: total, rows: []};
+  const height = Math.min(effectiveSize, total - start);
+  if (height <= 0) return {total: total, rows: []};
+  const rows = sh.getRange(2 + start, 1, height, 15).getValues();
   return {total: total, rows: rows};
 }
 function ui_step3RefreshRefs(){ step3RefreshRefs(); return true; }
@@ -35,9 +42,15 @@ function ui_getVentesPage(page, size){
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName('Ventes');
   const total = sh ? Math.max(0, sh.getLastRow()-1) : 0;
-  if (!sh || total===0) return {total:0, rows:[]};
-  const start = Math.max(0, (page-1)*size);
-  const rows = sh.getRange(2+start,1, Math.min(size,total-start), 10).getValues();
+  if (!sh || total === 0) return {total: 0, rows: []};
+  const effectiveSize = Math.max(1, size || 1);
+  const pages = Math.max(1, Math.ceil(total / effectiveSize));
+  const current = Math.min(pages, Math.max(1, page || 1));
+  const start = (current - 1) * effectiveSize;
+  if (start >= total) return {total: total, rows: []};
+  const height = Math.min(effectiveSize, total - start);
+  if (height <= 0) return {total: total, rows: []};
+  const rows = sh.getRange(2 + start, 1, height, 10).getValues();
   return {total: total, rows: rows};
 }
 function ui_step8RecalcAll(){ step8RecalcAll(); return true; }

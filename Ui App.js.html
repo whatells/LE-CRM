@@ -45,9 +45,15 @@
   }
   function renderPager(el, total, page, size, loadFn){
     const pages = Math.max(1, Math.ceil(total/size));
-    el.innerHTML = `<button ${page<=1?'disabled':''} id="pgPrev">◀</button> <span>${page}/${pages}</span> <button ${page>=pages?'disabled':''} id="pgNext">▶</button>`;
-    $('#pgPrev') && $('#pgPrev').addEventListener('click', ()=>loadFn(page-1));
-    $('#pgNext') && $('#pgNext').addEventListener('click', ()=>loadFn(page+1));
+    const current = Math.min(pages, Math.max(1, page||1));
+    el.innerHTML = `
+      <button type="button" data-role="prev" ${current<=1?'disabled':''}>◀</button>
+      <span>${current}/${pages}</span>
+      <button type="button" data-role="next" ${current>=pages?'disabled':''}>▶</button>`;
+    const prevBtn = el.querySelector('button[data-role="prev"]');
+    const nextBtn = el.querySelector('button[data-role="next"]');
+    prevBtn && prevBtn.addEventListener('click', ()=>loadFn(Math.max(1, current-1)));
+    nextBtn && nextBtn.addEventListener('click', ()=>loadFn(Math.min(pages, current+1)));
   }
 
   // --- Stock ---
