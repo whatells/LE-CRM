@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <base target="_top" />
+    <title>LE-CRM</title>
+    <style><?= include('App.css'); ?></style>
+  </head>
+  <body>
+    <div class="app" data-initial-view="<?!= initialView || 'dashboard' ?>">
+      <header class="app-header">
+        <div>
+          <h1 class="app-title">LE-CRM</h1>
+          <p class="app-subtitle">Synthèse temps réel de votre activité.</p>
+        </div>
+        <div class="header-actions">
+          <button id="refreshBtn" class="btn primary" type="button">Rafraîchir</button>
+          <button id="openSettingsBtn" class="btn" type="button">Paramètres</button>
+        </div>
+      </header>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-target="dashboardView" type="button">Dashboard</button>
+        <button class="tab" data-target="settingsView" type="button">Paramètres</button>
+        <button class="tab" data-target="logsView" type="button">Logs</button>
+      </nav>
+      <main class="views">
+        <section id="dashboardView" class="view" aria-label="Dashboard">
+          <div id="dashboardLoader" class="loader hidden">Chargement…</div>
+          <div id="dashboardContent" class="dashboard-content hidden">
+            <p class="meta">Dernière mise à jour : <span id="dashboardUpdatedAt">-</span></p>
+            <div id="kpiGrid" class="kpi-grid"></div>
+            <div id="tablesContainer" class="tables"></div>
+          </div>
+        </section>
+        <section id="settingsView" class="view hidden" aria-label="Paramètres">
+          <div class="settings-actions">
+            <button id="addSettingBtn" class="btn" type="button">Ajouter une ligne</button>
+            <button id="saveSettingsBtn" class="btn primary" type="button">Enregistrer</button>
+          </div>
+          <table id="settingsTable" class="data-table">
+            <thead>
+              <tr>
+                <th>Clé</th>
+                <th>Valeur</th>
+                <th>Notes</th>
+                <th aria-label="Supprimer"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </section>
+        <section id="logsView" class="view hidden" aria-label="Logs">
+          <div class="logs-actions">
+            <button id="refreshLogsBtn" class="btn" type="button">Rafraîchir</button>
+          </div>
+          <ul id="logsList" class="logs-list"></ul>
+        </section>
+      </main>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    </div>
+    <script>
+      const INITIAL_VIEW = <?!= JSON.stringify(initialView || 'dashboard'); ?>;
+    </script>
+    <script><?= include('App.js'); ?></script>
+  </body>
+</html>
